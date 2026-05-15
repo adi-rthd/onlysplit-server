@@ -3,34 +3,59 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: onlysplit-api
+
+    restart: unless-stopped
+
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
+
       Backend__PublicBaseUrl: https://api-split.onlylabs.in
-      AllowedHosts: api-split.onlylabs.in
-      ConnectionStrings__DefaultConnection: ${ConnectionStrings__DefaultConnection:?Set ConnectionStrings__DefaultConnection in the server environment}
-      Jwt__Secret: ${Jwt__Secret:?Set Jwt__Secret in the server environment}
+
+      AllowedHosts: "*"
+
+      ConnectionStrings__DefaultConnection: ${ConnectionStrings__DefaultConnection}
+
+      Jwt__Secret: ${Jwt__Secret}
       Jwt__Issuer: OnlySplit.API
       Jwt__Audience: OnlySplit.Clients
       Jwt__AccessTokenMinutes: 15
       Jwt__RefreshTokenDays: 30
-      Razorpay__KeyId: ${Razorpay__KeyId:?Set Razorpay__KeyId in the server environment}
-      Razorpay__KeySecret: ${Razorpay__KeySecret:?Set Razorpay__KeySecret in the server environment}
-      Razorpay__WebhookSecret: ${Razorpay__WebhookSecret:?Set Razorpay__WebhookSecret in the server environment}
+
+      Razorpay__KeyId: ${Razorpay__KeyId}
+      Razorpay__KeySecret: ${Razorpay__KeySecret}
+      Razorpay__WebhookSecret: ${Razorpay__WebhookSecret}
       Razorpay__Currency: INR
-      Cors__AllowedOrigins__0: https://api-split.onlylabs.in
-      Database__RunMigrationsOnStartup: "false"
+
+      Cors__AllowedOrigins__0: https://split.onlylabs.in
+
+      Database__RunMigrationsOnStartup: "true"
       SeedData__Enabled: "false"
+
     ports:
-      - "8080:8080"
+      - "5190:8080"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
 
   redis:
     image: redis:7-alpine
+
     container_name: onlysplit-redis
+
+    restart: unless-stopped
+
     command: ["redis-server", "--appendonly", "yes"]
+
     ports:
       - "6379:6379"
+
     volumes:
       - redis_data:/data
 
