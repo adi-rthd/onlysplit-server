@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using OnlySplit.Application.Dashboard.Interfaces;
+using OnlySplit.Application.Dashboard.Services;
 using OnlySplit.Application.Interfaces;
 using OnlySplit.Infrastructure.Authentication;
 using OnlySplit.Infrastructure.Database;
@@ -11,7 +13,6 @@ using OnlySplit.Infrastructure.Payments;
 using OnlySplit.Infrastructure.Persistence;
 using OnlySplit.Infrastructure.Repositories;
 using OnlySplit.Infrastructure.Services;
-
 namespace OnlySplit.Infrastructure;
 
 public static class DependencyInjection
@@ -123,6 +124,8 @@ public static class DependencyInjection
         services.AddScoped<IRazorpayService, RazorpayService>();
         services.AddScoped<IPaymentVerificationService, PaymentVerificationService>();
         services.AddScoped<IPaymentService, PaymentService>();
+        services.AddScoped<IBasicPageService, BasicPageService>();
+        services.AddScoped<IDashboardService, DashboardService>();
 
         return services;
     }
