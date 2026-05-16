@@ -40,12 +40,17 @@ public sealed class GroupService(
     {
         var userId = currentUser.UserId;
         var groups = await context.Groups
-            .AsNoTracking()
-            .Include(group => group.Members)
-                .ThenInclude(member => member.User)
-            .Where(group => group.Members.Any(member => member.UserId == userId))
-            .OrderByDescending(group => group.CreatedAt)
-            .ToListAsync(cancellationToken);
+          .AsNoTracking()
+          .Include(group => group.Members)
+              .ThenInclude(member => member.User)
+          .Include(group => group.Expenses)
+          .Where(group =>
+              group.Members.Any(member =>
+                  member.UserId == userId
+              )
+          )
+          .OrderByDescending(group => group.CreatedAt)
+          .ToListAsync(cancellationToken);
 
         return groups.Select(ToResponse).ToArray();
     }
@@ -159,21 +164,30 @@ public sealed class GroupService(
         }
     }
 
-    private static GroupResponse ToResponse(Group group) =>
-        new(
-            group.Id,
-            group.Name,
-            group.CreatedBy,
-            group.CreatedAt,
-            group.InviteCode,
-            group.Members
-                .OrderBy(member => member.JoinedAt)
-                .Select(member => new GroupMemberResponse(
-                    member.UserId,
-                    member.User?.FirstName ?? string.Empty,
-                    member.User?.LastName ?? string.Empty,
-                    member.User?.Email ?? string.Empty,
-                    member.User?.AvatarUrl,
-                    member.JoinedAt))
-                .ToArray());
+    private static GroupResponse ToResponse(
+       Group group
+   ) =>
+       new(
+           group.Id,
+           group.Name,
+           group.CreatedBy,
+           group.CreatedAt,
+           group.InviteCode,
+
+           group.Expenses.Sum(
+               expense => expense.Amount
+           ),
+
+           group.Members
+               .OrderBy(member => member.JoinedAt)
+               .Select(member => new GroupMemberResponse(
+                   member.UserId,
+                   member.User?.FirstName ?? string.Empty,
+                   member.User?.LastName ?? string.Empty,
+                   member.User?.Email ?? string.Empty,
+                   member.User?.AvatarUrl,
+                   member.JoinedAt
+               ))
+               .ToArray()
+       );
 }

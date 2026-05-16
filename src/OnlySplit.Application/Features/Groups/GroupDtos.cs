@@ -14,10 +14,12 @@ public sealed record GroupMemberResponse(
     string? AvatarUrl,
     DateTimeOffset JoinedAt);
 
-public sealed record GroupResponse(
+public record GroupResponse(
     Guid Id,
     string Name,
     Guid CreatedBy,
     DateTimeOffset CreatedAt,
     string InviteCode,
-    IReadOnlyCollection<GroupMemberResponse> Members);
+    decimal TotalSpending,
+    IReadOnlyCollection<GroupMemberResponse> Members
+);
