@@ -16,43 +16,91 @@ public sealed class ExpenseService(
     IActivityService activityService,
     IRealtimeNotifier realtimeNotifier) : IExpenseService
 {
-    public async Task<ExpenseResponse> CreateAsync(CreateExpenseRequest request, CancellationToken cancellationToken = default)
+    public async Task<ExpenseResponse> CreateAsync(
+      CreateExpenseRequest request,
+      CancellationToken cancellationToken = default)
     {
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        var strategy = context.Database.CreateExecutionStrategy();
 
-        var group = await LoadGroupForMutationAsync(request.GroupId, cancellationToken);
-        EnsureMember(group, currentUser.UserId);
+        ExpenseResponse? response = null;
+        Guid groupId = Guid.Empty;
 
-        var paidBy = request.PaidBy ?? currentUser.UserId;
-        EnsureMember(group, paidBy);
-
-        var splitType = NormalizeSplitType(request.SplitType);
-        var splits = BuildSplits(group, request.Amount, splitType, request.Splits);
-
-        var expense = new Expense
+        await strategy.ExecuteAsync(async () =>
         {
-            GroupId = group.Id,
-            PaidBy = paidBy,
-            Title = request.Title.Trim(),
-            Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
-            Amount = MoneyMath.Round(request.Amount),
-            Category = request.Category.Trim().ToLowerInvariant(),
-            Splits = splits
-        };
+            await using var transaction =
+                await context.Database.BeginTransactionAsync(cancellationToken);
 
-        context.Expenses.Add(expense);
-        await context.SaveChangesAsync(cancellationToken);
-        await settlementService.RegenerateForGroupAsync(group.Id, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+            var group = await LoadGroupForMutationAsync(
+                request.GroupId,
+                cancellationToken);
 
-        var response = await GetExpenseResponseAsync(expense.Id, cancellationToken);
-        await activityService.LogAsync(currentUser.UserId, ActivityTypes.ExpenseCreated, new { expense.Id, expense.GroupId, expense.Amount }, cancellationToken);
-        await realtimeNotifier.SendGroupAsync(group.Id, "ExpenseAdded", response, cancellationToken);
-        await BroadcastBalanceRefreshAsync(group.Id, cancellationToken);
+            EnsureMember(group, currentUser.UserId);
 
-        return response;
+            var paidBy = request.PaidBy ?? currentUser.UserId;
+
+            EnsureMember(group, paidBy);
+
+            var splitType = NormalizeSplitType(request.SplitType);
+
+            var splits = BuildSplits(
+                group,
+                request.Amount,
+                splitType,
+                request.Splits);
+
+            var expense = new Expense
+            {
+                GroupId = group.Id,
+                PaidBy = paidBy,
+                Title = request.Title.Trim(),
+                Description = string.IsNullOrWhiteSpace(request.Description)
+                    ? null
+                    : request.Description.Trim(),
+                Amount = MoneyMath.Round(request.Amount),
+                Category = request.Category.Trim().ToLowerInvariant(),
+                Splits = splits
+            };
+
+            context.Expenses.Add(expense);
+
+            await context.SaveChangesAsync(cancellationToken);
+
+            await settlementService.RegenerateForGroupAsync(
+                group.Id,
+                cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+
+            response = await GetExpenseResponseAsync(
+                expense.Id,
+                cancellationToken);
+
+            groupId = group.Id;
+
+            await activityService.LogAsync(
+                currentUser.UserId,
+                ActivityTypes.ExpenseCreated,
+                new
+                {
+                    expense.Id,
+                    expense.GroupId,
+                    expense.Amount
+                },
+                cancellationToken);
+        });
+
+        await realtimeNotifier.SendGroupAsync(
+            groupId,
+            "ExpenseAdded",
+            response!,
+            cancellationToken);
+
+        await BroadcastBalanceRefreshAsync(
+            groupId,
+            cancellationToken);
+
+        return response!;
     }
-
     public async Task<IReadOnlyCollection<ExpenseResponse>> GetByGroupAsync(Guid groupId, CancellationToken cancellationToken = default)
     {
         await EnsureGroupAccessAsync(groupId, cancellationToken);
