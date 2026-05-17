@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using OnlySplit.Application.Activities.Interfaces;
+using OnlySplit.Application.Activities.Services;
 using OnlySplit.Application.Dashboard.Interfaces;
 using OnlySplit.Application.Dashboard.Services;
 using OnlySplit.Application.Interfaces;
@@ -127,6 +129,7 @@ public static class DependencyInjection
         services.AddScoped<IBasicPageService, BasicPageService>();
         services.AddScoped<IDashboardService, DashboardService>();
 
+        services.AddScoped<IActivityFeedService, ActivityFeedService>();
         return services;
     }
 

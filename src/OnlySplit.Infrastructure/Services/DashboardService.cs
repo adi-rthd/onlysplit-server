@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-// using OnlySplit.Application.Dashboard.Interfaces;
 using OnlySplit.Application.Dashboard.DTOs;
 using OnlySplit.Application.Dashboard.Interfaces;
 using OnlySplit.Application.Interfaces;
@@ -18,9 +17,6 @@ public class DashboardService(
     {
         var userId = currentUser.UserId;
 
-        /**
-         * LOAD USER GROUPS
-         */
         var groups = await context.Groups
             .AsNoTracking()
             .Include(group => group.Members)
@@ -38,6 +34,12 @@ public class DashboardService(
         var totalGroups = groups.Count;
 
         /**
+         * DASHBOARD CURRENCY
+         */
+        var currency = groups
+            .FirstOrDefault()?.Currency ?? "USD";
+
+        /**
          * TOTAL MEMBERS
          */
         var totalMembers = groups.Sum(group =>
@@ -48,7 +50,9 @@ public class DashboardService(
          * TOTAL SPENDING
          */
         var totalSpending = groups.Sum(group =>
-            group.Expenses.Sum(expense => expense.Amount)
+            group.Expenses.Sum(expense =>
+                expense.Amount
+            )
         );
 
         decimal youOwe = 0;
@@ -66,7 +70,8 @@ public class DashboardService(
 
             foreach (var expense in group.Expenses)
             {
-                var splitAmount = expense.Amount / memberCount;
+                var splitAmount =
+                    expense.Amount / memberCount;
 
                 if (expense.PaidBy == userId)
                 {
@@ -80,13 +85,62 @@ public class DashboardService(
             }
         }
 
+        /**
+         * RECENT ACTIVITIES
+         */
+        var recentActivities = groups
+            .SelectMany(group =>
+                group.Expenses.Select(expense =>
+                    new RecentActivityResponse
+                    {
+                        ExpenseId = expense.Id,
+
+                        Title = expense.Title,
+
+                        Amount = expense.Amount,
+
+                        Currency = group.Currency ?? "USD",
+
+                        GroupName = group.Name,
+
+                        // fallback until navigation property exists
+                        PaidByName = expense.PaidBy,
+
+                        // use existing timestamp property
+                        CreatedAt = expense.CreatedAt
+                    }
+                )
+            )
+            .OrderByDescending(expense =>
+                expense.CreatedAt
+            )
+            .Take(5)
+            .ToList();
+
         return new DashboardSummaryResponse
         {
+            Currency = currency,
+
             TotalGroups = totalGroups,
+
             TotalMembers = totalMembers,
-            TotalSpending = Math.Round(totalSpending, 2),
-            YouOwe = Math.Round(youOwe, 2),
-            YouAreOwed = Math.Round(youAreOwed, 2)
+
+            TotalSpending = Math.Round(
+                totalSpending,
+                2
+            ),
+
+            YouOwe = Math.Round(
+                youOwe,
+                2
+            ),
+
+            YouAreOwed = Math.Round(
+                youAreOwed,
+                2
+            ),
+
+            RecentActivities = recentActivities
         };
     }
 }
