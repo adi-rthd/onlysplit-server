@@ -18,6 +18,7 @@ public record GroupResponse(
     Guid Id,
     string Name,
     Guid CreatedBy,
+    string Currency,
     DateTimeOffset CreatedAt,
     string InviteCode,
     decimal TotalSpending,

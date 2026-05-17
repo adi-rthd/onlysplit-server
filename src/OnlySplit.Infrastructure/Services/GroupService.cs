@@ -164,16 +164,14 @@ public sealed class GroupService(
         }
     }
 
-    private static GroupResponse ToResponse(
-       Group group
-   ) =>
+    private static GroupResponse ToResponse(Group group) =>
        new(
            group.Id,
            group.Name,
            group.CreatedBy,
+           group.Currency,
            group.CreatedAt,
            group.InviteCode,
-
            group.Expenses.Sum(
                expense => expense.Amount
            ),
