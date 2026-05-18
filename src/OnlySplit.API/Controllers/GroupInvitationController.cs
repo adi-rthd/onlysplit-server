@@ -15,6 +15,7 @@ public sealed class GroupInvitationController(
     IGroupInvitation invitationService
 ) : ControllerBase
 {
+    
     [HttpPost("invite")]
     public async Task<ActionResult<ApiResponse<string>>> Invite(
         CreateGroupInvitationRequest request,
@@ -27,6 +28,52 @@ public sealed class GroupInvitationController(
         return Ok(
             ApiResponse<string>.Ok(
                 "Invitation sent successfully."
+            )
+        );
+    }
+
+    [HttpGet("mine")]
+    public async Task<ActionResult<
+        ApiResponse<IReadOnlyCollection<GroupInvitationResponse>>>>
+        Mine(CancellationToken cancellationToken)
+    {
+        var response = await invitationService
+            .GetMyInvitationsAsync(cancellationToken);
+
+        return Ok(
+            ApiResponse<IReadOnlyCollection<GroupInvitationResponse>>
+                .Ok(response)
+        );
+    }
+
+    [HttpPost("{id:guid}/accept")]
+    public async Task<ActionResult<ApiResponse<string>>> Accept(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await invitationService.AcceptInvitationAsync(
+            id,
+            cancellationToken);
+
+        return Ok(
+            ApiResponse<string>.Ok(
+                "Invitation accepted."
+            )
+        );
+    }
+
+    [HttpPost("{id:guid}/reject")]
+    public async Task<ActionResult<ApiResponse<string>>> Reject(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await invitationService.RejectInvitationAsync(
+            id,
+            cancellationToken);
+
+        return Ok(
+            ApiResponse<string>.Ok(
+                "Invitation rejected."
             )
         );
     }

@@ -14,79 +14,99 @@ public sealed class GroupInvitationService(
 ) : IGroupInvitation
 {
     public async Task SendInvitationAsync(CreateGroupInvitationRequest request, CancellationToken cancellationToken = default)
-{
-    var currentUserId = currentUser.UserId;
-
-    var group = await context.Groups
-        .Include(x => x.Members)
-        .FirstOrDefaultAsync(
-            x => x.Id == request.GroupId,
-            cancellationToken);
-
-    if (group is null)
     {
-        throw new Exception("Group not found");
-    }
+        var currentUserId = currentUser.UserId;
 
-    var isMember = group.Members.Any(x => x.UserId == currentUserId);
+        var group = await context.Groups
+            .Include(x => x.Members)
+            .FirstOrDefaultAsync(
+                x => x.Id == request.GroupId,
+                cancellationToken);
 
-    if (!isMember)
-    {
-        throw new Exception("You are not a member");
-    }
-
-    var alreadyMember = group.Members.Any(x => x.UserId == request.InvitedUserId);
-
-    if (alreadyMember)
-    {
-        throw new Exception("User already in group");
-    }
-
-    var existingInvite = await context.GroupInvitations
-        .AnyAsync(x =>
-            x.GroupId == request.GroupId &&
-            x.InvitedUserId == request.InvitedUserId &&
-            x.Status == "Pending",
-            cancellationToken);
-
-    if (existingInvite)
-    {
-        throw new Exception("Invitation already sent");
-    }
-
-    var invitation = new GroupInvitation
-    {
-        Id = Guid.NewGuid(),
-        GroupId = request.GroupId,
-        InvitedBy = currentUserId,
-        InvitedUserId = request.InvitedUserId,
-        Status = "Pending",
-        CreatedAt = DateTime.UtcNow
-    };
-
-    await context.GroupInvitations.AddAsync(
-        invitation,
-        cancellationToken);
-
-    var notification = new Notification
-    {
-        Id = Guid.NewGuid(),
-        UserId = request.InvitedUserId,
-        Type = "group_invitation",
-        Title = "New Group Invitation",
-        Message = $"You were invited to join {group.Name}",
-        Payload = JsonSerializer.Serialize(new
+        if (group is null)
         {
-            GroupId = group.Id,
-            InvitationId = invitation.Id
-        }),
-        CreatedAt = DateTime.UtcNow
-    };
+            throw new Exception("Group not found");
+        }
 
-    await context.Notifications.AddAsync(
-        notification,
-        cancellationToken);
+        var isMember = group.Members.Any(x => x.UserId == currentUserId);
 
-    await context.SaveChangesAsync(cancellationToken);
-}
+        if (!isMember)
+        {
+            throw new Exception("You are not a member");
+        }
+
+        var alreadyMember = group.Members.Any(x => x.UserId == request.InvitedUserId);
+
+        if (alreadyMember)
+        {
+            throw new Exception("User already in group");
+        }
+
+        var existingInvite = await context.GroupInvitations
+            .AnyAsync(x =>
+                x.GroupId == request.GroupId &&
+                x.InvitedUserId == request.InvitedUserId &&
+                x.Status == "Pending",
+                cancellationToken);
+
+        if (existingInvite)
+        {
+            throw new Exception("Invitation already sent");
+        }
+
+        var invitation = new GroupInvitation
+        {
+            Id = Guid.NewGuid(),
+            GroupId = request.GroupId,
+            InvitedBy = currentUserId,
+            InvitedUserId = request.InvitedUserId,
+            Status = "Pending",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await context.GroupInvitations.AddAsync(
+            invitation,
+            cancellationToken);
+
+        var notification = new Notification
+        {
+            Id = Guid.NewGuid(),
+            UserId = request.InvitedUserId,
+            Type = "group_invitation",
+            Title = "New Group Invitation",
+            Message = $"You were invited to join {group.Name}",
+            Payload = JsonSerializer.Serialize(new
+            {
+                GroupId = group.Id,
+                InvitationId = invitation.Id
+            }),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await context.Notifications.AddAsync(
+            notification,
+            cancellationToken);
+
+        await context.SaveChangesAsync(cancellationToken);
+    }
+    public async Task<IReadOnlyCollection<GroupInvitationResponse>>
+        GetMyInvitationsAsync(
+            CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task AcceptInvitationAsync(
+        Guid invitationId,
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task RejectInvitationAsync(
+        Guid invitationId,
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 }
