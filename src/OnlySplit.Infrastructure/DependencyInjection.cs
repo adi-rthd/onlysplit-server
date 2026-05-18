@@ -128,6 +128,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IBasicPageService, BasicPageService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<IGroupInvitation, GroupInvitationService>();
 
         services.AddScoped<IActivityFeedService, ActivityFeedService>();
         return services;

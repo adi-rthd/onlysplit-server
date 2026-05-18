@@ -51,4 +51,15 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
     }
 
     private string? IpAddress => HttpContext.Connection.RemoteIpAddress?.ToString();
+
+    [HttpGet("search")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<UserSearchResponse>>>> Search(
+    [FromQuery] string q,
+    CancellationToken cancellationToken)
+    {
+        var response = await authService.SearchUsersAsync(q, cancellationToken);
+
+        return Ok(ApiResponse<IReadOnlyCollection<UserSearchResponse>>
+            .Ok(response));
+    }
 }

@@ -18,8 +18,7 @@ public sealed class OnlySplitDbContextFactory : IDesignTimeDbContextFactory<Only
             .AddEnvironmentVariables()
             .Build();
 
-        var connectionString = configuration.GetConnectionString("DefaultConnection") ??
-            "Host=localhost;Port=5432;Database=onlysplit;Username=onlysplit;Password=onlysplit";
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
 
         var optionsBuilder = new DbContextOptionsBuilder<OnlySplitDbContext>();
         optionsBuilder.UseNpgsql(connectionString);

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using OnlySplit.Application.Features.Notifications;
 using OnlySplit.Domain.Entities;
 
 namespace OnlySplit.Infrastructure.Configurations;
@@ -221,6 +222,80 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
         builder.HasOne(token => token.User)
             .WithMany(user => user.RefreshTokens)
             .HasForeignKey(token => token.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public sealed class GroupInvitationConfiguration
+    : IEntityTypeConfiguration<GroupInvitation>
+{
+    public void Configure(EntityTypeBuilder<GroupInvitation> builder)
+    {
+        builder.ToTable("group_invitations");
+
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.Status)
+            .HasMaxLength(20)
+            .IsRequired();
+
+        builder.Property(x => x.CreatedAt)
+            .IsRequired();
+
+        builder.HasIndex(x => new { x.GroupId, x.InvitedUserId })
+            .IsUnique();
+
+        builder.HasOne(x => x.Group)
+            .WithMany()
+            .HasForeignKey(x => x.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(x => x.InvitedByUser)
+            .WithMany()
+            .HasForeignKey(x => x.InvitedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.InvitedUser)
+            .WithMany()
+            .HasForeignKey(x => x.InvitedUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+
+public sealed class NotificationConfiguration
+    : IEntityTypeConfiguration<Notification>
+{
+    public void Configure(EntityTypeBuilder<Notification> builder)
+    {
+        builder.ToTable("notifications");
+
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.Type)
+            .HasMaxLength(50)
+            .IsRequired();
+
+        builder.Property(x => x.Title)
+            .HasMaxLength(255)
+            .IsRequired();
+
+        builder.Property(x => x.Message);
+
+        builder.Property(x => x.Payload)
+            .HasColumnType("jsonb");
+
+        builder.Property(x => x.IsRead)
+            .HasDefaultValue(false);
+
+        builder.Property(x => x.CreatedAt)
+            .IsRequired();
+
+        builder.HasIndex(x => x.UserId);
+
+        builder.HasOne(x => x.User)
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OnlySplit.Application.Features.Notifications;
 using OnlySplit.Domain.Entities;
 
 namespace OnlySplit.Infrastructure.Database;
@@ -14,6 +15,8 @@ public class OnlySplitDbContext(DbContextOptions<OnlySplitDbContext> options) : 
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<GroupInvitation> GroupInvitations => Set<GroupInvitation>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -27,3 +27,11 @@ public sealed record AuthResponse(
     string RefreshToken,
     DateTimeOffset AccessTokenExpiresAt,
     UserResponse User);
+
+public sealed record UserSearchResponse(
+    Guid Id,
+    string FirstName,
+    string LastName,
+    string Email,
+    string? AvatarUrl
+);
