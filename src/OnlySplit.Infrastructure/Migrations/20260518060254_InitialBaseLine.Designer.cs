@@ -12,8 +12,8 @@ using OnlySplit.Infrastructure.Database;
 namespace OnlySplit.Infrastructure.Migrations
 {
     [DbContext(typeof(OnlySplitDbContext))]
-    [Migration("20260518053506_AddInvitationsAndNotifications")]
-    partial class AddInvitationsAndNotifications
+    [Migration("20260518060254_InitialBaseLine")]
+    partial class InitialBaseLine
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
