@@ -209,6 +209,36 @@ namespace OnlySplit.Infrastructure.Migrations
                     b.ToTable("expense_splits", (string)null);
                 });
 
+            modelBuilder.Entity("OnlySplit.Domain.Entities.Friendship", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AddresseeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RequesterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddresseeId");
+
+                    b.HasIndex("RequesterId", "AddresseeId")
+                        .IsUnique();
+
+                    b.ToTable("friendships", (string)null);
+                });
+
             modelBuilder.Entity("OnlySplit.Domain.Entities.Group", b =>
                 {
                     b.Property<Guid>("Id")
@@ -534,6 +564,25 @@ namespace OnlySplit.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("OnlySplit.Domain.Entities.Friendship", b =>
+                {
+                    b.HasOne("OnlySplit.Domain.Entities.User", "Addressee")
+                        .WithMany("ReceivedFriendRequests")
+                        .HasForeignKey("AddresseeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OnlySplit.Domain.Entities.User", "Requester")
+                        .WithMany("SentFriendRequests")
+                        .HasForeignKey("RequesterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Addressee");
+
+                    b.Navigation("Requester");
+                });
+
             modelBuilder.Entity("OnlySplit.Domain.Entities.Group", b =>
                 {
                     b.HasOne("OnlySplit.Domain.Entities.User", "CreatedByUser")
@@ -643,7 +692,11 @@ namespace OnlySplit.Infrastructure.Migrations
 
                     b.Navigation("PaidExpenses");
 
+                    b.Navigation("ReceivedFriendRequests");
+
                     b.Navigation("RefreshTokens");
+
+                    b.Navigation("SentFriendRequests");
 
                     b.Navigation("SettlementsPaid");
 

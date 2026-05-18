@@ -299,3 +299,35 @@ public sealed class NotificationConfiguration
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
+
+
+public sealed class FriendshipConfiguration
+    : IEntityTypeConfiguration<Friendship>
+{
+    public void Configure(EntityTypeBuilder<Friendship> builder)
+    {
+        builder.ToTable("friendships");
+
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.Status)
+            .HasMaxLength(20)
+            .IsRequired();
+
+        builder.HasIndex(x => new
+        {
+            x.RequesterId,
+            x.AddresseeId
+        }).IsUnique();
+
+        builder.HasOne(x => x.Requester)
+            .WithMany(x => x.SentFriendRequests)
+            .HasForeignKey(x => x.RequesterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.Addressee)
+            .WithMany(x => x.ReceivedFriendRequests)
+            .HasForeignKey(x => x.AddresseeId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}

@@ -1,8 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
 using OnlySplit.Application.Features.GroupInvitation;
 using OnlySplit.Application.Interfaces;
 using OnlySplit.Shared.Responses;
-
 namespace OnlySplit.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
@@ -67,9 +65,7 @@ public sealed class GroupInvitationController(
         Guid id,
         CancellationToken cancellationToken)
     {
-        await invitationService.RejectInvitationAsync(
-            id,
-            cancellationToken);
+        await invitationService.RejectInvitationAsync(id, cancellationToken);
 
         return Ok(
             ApiResponse<string>.Ok(

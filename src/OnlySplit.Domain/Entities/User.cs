@@ -19,4 +19,7 @@ public class User
     public ICollection<Settlement> SettlementsReceived { get; set; } = new List<Settlement>();
     public ICollection<ActivityLog> ActivityLogs { get; set; } = new List<ActivityLog>();
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+    public ICollection<Friendship> SentFriendRequests { get; set; } = new List<Friendship>();
+
+    public ICollection<Friendship> ReceivedFriendRequests { get; set; } = new List<Friendship>();
 }
