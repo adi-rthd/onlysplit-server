@@ -17,6 +17,7 @@ public class OnlySplitDbContext(DbContextOptions<OnlySplitDbContext> options) : 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<GroupInvitation> GroupInvitations => Set<GroupInvitation>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Friendship> Friendships => Set<Friendship>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

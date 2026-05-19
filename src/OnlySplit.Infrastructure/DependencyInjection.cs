@@ -130,9 +130,8 @@ public static class DependencyInjection
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IGroupInvitation, GroupInvitationService>();
         services.AddScoped<IGroupInvitation, GroupInvitationService>();
-
         services.AddScoped<INotificationService, NotificationService>();
-
+        services.AddScoped<IFriendshipService, FriendshipService>();
         services.AddScoped<IActivityFeedService, ActivityFeedService>();
         return services;
     }

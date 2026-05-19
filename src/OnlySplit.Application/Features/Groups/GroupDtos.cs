@@ -1,6 +1,6 @@
 namespace OnlySplit.Application.Features.Groups;
 
-public sealed record CreateGroupRequest(string Name);
+public sealed record CreateGroupRequest(string Name, string description);
 
 public sealed record InviteGroupRequest(string Email);
 
@@ -18,6 +18,7 @@ public record GroupResponse(
     Guid Id,
     string Name,
     Guid CreatedBy,
+    string Description,
     string Currency,
     DateTimeOffset CreatedAt,
     string InviteCode,

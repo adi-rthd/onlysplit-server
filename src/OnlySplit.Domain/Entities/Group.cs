@@ -5,7 +5,8 @@ public class Group
     public Guid Id { get; set; } = Guid.NewGuid();
 
     public string Name { get; set; } = string.Empty;
-
+    
+    public string Description { get; set; } = "";
     // ADD THIS
     public string Currency { get; set; } = "INR";
 

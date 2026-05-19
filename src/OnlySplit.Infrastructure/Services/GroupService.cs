@@ -20,13 +20,15 @@ public sealed class GroupService(
         var group = new Group
         {
             Name = request.Name.Trim(),
-            CreatedBy = userId
+            CreatedBy = userId,
+            Description = request.description.Trim()
         };
 
         group.Members.Add(new GroupMember
         {
             GroupId = group.Id,
             UserId = userId
+
         });
 
         context.Groups.Add(group);
@@ -169,6 +171,7 @@ public sealed class GroupService(
            group.Id,
            group.Name,
            group.CreatedBy,
+           group.Description,
            group.Currency,
            group.CreatedAt,
            group.InviteCode,
