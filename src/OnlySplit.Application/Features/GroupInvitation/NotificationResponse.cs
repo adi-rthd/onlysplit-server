@@ -6,6 +6,7 @@ public sealed record NotificationResponse(
     string Title,
     string? Message,
     string? Payload,
+    string invitedByName,
     bool IsRead,
     DateTime CreatedAt
 );

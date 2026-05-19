@@ -18,8 +18,7 @@ public sealed class NotificationsController(
         ApiResponse<IReadOnlyCollection<NotificationResponse>>>>
         Get(CancellationToken cancellationToken)
     {
-        var response = await notificationService
-            .GetNotificationsAsync(cancellationToken);
+        var response = await notificationService.GetNotificationsAsync(cancellationToken);
 
         return Ok(
             ApiResponse<IReadOnlyCollection<NotificationResponse>>

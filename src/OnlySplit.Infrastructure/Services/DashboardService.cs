@@ -10,137 +10,162 @@ public class DashboardService(
     OnlySplitDbContext context,
     ICurrentUserService currentUser
 ) : IDashboardService
+{public async Task<DashboardSummaryResponse> GetSummaryAsync(
+    CancellationToken cancellationToken = default
+)
 {
-    public async Task<DashboardSummaryResponse> GetSummaryAsync(
-        CancellationToken cancellationToken = default
-    )
+    var userId = currentUser.UserId;
+
+    var groups = await context.Groups
+        .AsNoTracking()
+        .Include(group => group.Members)
+        .Include(group => group.Expenses)
+        .Where(group =>
+            group.Members.Any(member =>
+                member.UserId == userId
+            )
+        )
+        .ToListAsync(cancellationToken);
+
+    /**
+     * TOTAL GROUPS
+     */
+    var totalGroups = groups.Count;
+
+    /**
+     * DASHBOARD CURRENCY
+     */
+    var currency = groups
+        .FirstOrDefault()?.Currency ?? "USD";
+
+    /**
+     * TOTAL MEMBERS
+     */
+    var totalMembers = groups.Sum(group =>
+        group.Members.Count
+    );
+
+    /**
+     * TOTAL SPENDING
+     */
+    var totalSpending = groups.Sum(group =>
+        group.Expenses.Sum(expense =>
+            expense.Amount
+        )
+    );
+
+    decimal youOwe = 0;
+    decimal youAreOwed = 0;
+
+    int youOweGroups = 0;
+    int youAreOwedGroups = 0;
+
+    /**
+     * CALCULATE BALANCES
+     */
+    foreach (var group in groups)
     {
-        var userId = currentUser.UserId;
+        decimal groupOwe = 0;
+        decimal groupOwed = 0;
 
-        var groups = await context.Groups
-            .AsNoTracking()
-            .Include(group => group.Members)
-            .Include(group => group.Expenses)
-            .Where(group =>
-                group.Members.Any(member =>
-                    member.UserId == userId
-                )
-            )
-            .ToListAsync(cancellationToken);
-
-        /**
-         * TOTAL GROUPS
-         */
-        var totalGroups = groups.Count;
-
-        /**
-         * DASHBOARD CURRENCY
-         */
-        var currency = groups
-            .FirstOrDefault()?.Currency ?? "USD";
-
-        /**
-         * TOTAL MEMBERS
-         */
-        var totalMembers = groups.Sum(group =>
-            group.Members.Count
+        var memberCount = Math.Max(
+            group.Members.Count,
+            1
         );
 
-        /**
-         * TOTAL SPENDING
-         */
-        var totalSpending = groups.Sum(group =>
-            group.Expenses.Sum(expense =>
-                expense.Amount
-            )
-        );
-
-        decimal youOwe = 0;
-        decimal youAreOwed = 0;
-
-        /**
-         * CALCULATE BALANCES
-         */
-        foreach (var group in groups)
+        foreach (var expense in group.Expenses)
         {
-            var memberCount = Math.Max(
-                group.Members.Count,
-                1
-            );
+            var splitAmount =
+                expense.Amount / memberCount;
 
-            foreach (var expense in group.Expenses)
+            if (expense.PaidBy == userId)
             {
-                var splitAmount =
-                    expense.Amount / memberCount;
+                var owedAmount =
+                    expense.Amount - splitAmount;
 
-                if (expense.PaidBy == userId)
-                {
-                    youAreOwed +=
-                        expense.Amount - splitAmount;
-                }
-                else
-                {
-                    youOwe += splitAmount;
-                }
+                youAreOwed += owedAmount;
+
+                groupOwed += owedAmount;
+            }
+            else
+            {
+                youOwe += splitAmount;
+
+                groupOwe += splitAmount;
             }
         }
 
-        /**
-         * RECENT ACTIVITIES
-         */
-        var recentActivities = groups
-            .SelectMany(group =>
-                group.Expenses.Select(expense =>
-                    new RecentActivityResponse
-                    {
-                        ExpenseId = expense.Id,
-
-                        Title = expense.Title,
-
-                        Amount = expense.Amount,
-
-                        Currency = group.Currency ?? "USD",
-
-                        GroupName = group.Name,
-
-                        // fallback until navigation property exists
-                        PaidByName = expense.PaidBy,
-
-                        // use existing timestamp property
-                        CreatedAt = expense.CreatedAt
-                    }
-                )
-            )
-            .OrderByDescending(expense =>
-                expense.CreatedAt
-            )
-            .Take(5)
-            .ToList();
-
-        return new DashboardSummaryResponse
+        if (groupOwe > 0)
         {
-            Currency = currency,
+            youOweGroups++;
+        }
 
-            TotalGroups = totalGroups,
-
-            TotalMembers = totalMembers,
-
-            TotalSpending = Math.Round(
-                totalSpending,
-                2
-            ),
-
-            YouOwe = Math.Round(
-                youOwe,
-                2
-            ),
-
-            YouAreOwed = Math.Round(
-                youAreOwed,
-                2
-            ),
-
-            RecentActivities = recentActivities
-        };
+        if (groupOwed > 0)
+        {
+            youAreOwedGroups++;
+        }
     }
+
+    /**
+     * RECENT ACTIVITIES
+     */
+    var recentActivities = groups
+        .SelectMany(group =>
+            group.Expenses.Select(expense =>
+                new RecentActivityResponse
+                {
+                    ExpenseId = expense.Id,
+
+                    Title = expense.Title,
+
+                    Amount = expense.Amount,
+
+                    Currency = group.Currency ?? "USD",
+
+                    GroupName = group.Name,
+
+                    // fallback until navigation property exists
+                    PaidByName = expense.PaidBy,
+
+                    // use existing timestamp property
+                    CreatedAt = expense.CreatedAt
+                }
+            )
+        )
+        .OrderByDescending(expense =>
+            expense.CreatedAt
+        )
+        .Take(5)
+        .ToList();
+
+    return new DashboardSummaryResponse
+    {
+        Currency = currency,
+
+        TotalGroups = totalGroups,
+
+        TotalMembers = totalMembers,
+
+        TotalSpending = Math.Round(
+            totalSpending,
+            2
+        ),
+
+        YouOwe = Math.Round(
+            youOwe,
+            2
+        ),
+
+        YouOweGroups = youOweGroups,
+
+        YouAreOwed = Math.Round(
+            youAreOwed,
+            2
+        ),
+
+        YouAreOwedGroups = youAreOwedGroups,
+
+        RecentActivities = recentActivities
+    };
+}
 }

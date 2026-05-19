@@ -19,6 +19,7 @@ public sealed class NotificationService(
         var notifications = await context.Notifications
             .AsNoTracking()
             .Where(x => x.UserId == userId)
+            .Include(x => x.User)
             .OrderByDescending(x => x.CreatedAt)
             .Select(x => new NotificationResponse(
                 x.Id,
@@ -26,6 +27,7 @@ public sealed class NotificationService(
                 x.Title,
                 x.Message,
                 x.Payload,
+                $"{x.User.FirstName} {x.User.LastName}",
                 x.IsRead,
                 x.CreatedAt
             ))

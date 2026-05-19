@@ -11,4 +11,6 @@ public class DashboardSummaryResponse
     public decimal YouOwe { get; set; }
 
     public decimal YouAreOwed { get; set; }
+    public int YouOweGroups {get; set;}
+    public int YouAreOwedGroups {get; set;}
 }

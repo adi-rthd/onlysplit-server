@@ -13,7 +13,7 @@ public sealed class GroupInvitationController(
     IGroupInvitation invitationService
 ) : ControllerBase
 {
-    
+
     [HttpPost("invite")]
     public async Task<ActionResult<ApiResponse<string>>> Invite(
         CreateGroupInvitationRequest request,
@@ -35,13 +35,21 @@ public sealed class GroupInvitationController(
         ApiResponse<IReadOnlyCollection<GroupInvitationResponse>>>>
         Mine(CancellationToken cancellationToken)
     {
-        var response = await invitationService
-            .GetMyInvitationsAsync(cancellationToken);
+        var response = await invitationService.GetMyInvitationsAsync(cancellationToken);
 
         return Ok(
             ApiResponse<IReadOnlyCollection<GroupInvitationResponse>>
                 .Ok(response)
         );
+    }
+    [HttpGet("{id:guid}/invited")]
+    public async Task<ActionResult<
+        ApiResponse<IReadOnlyCollection<GetGroupInvitationResponse>>>>
+        invited(Guid id, CancellationToken cancellationToken)
+    {
+        var response = await invitationService.GetGroupInvitationsAsync(id, cancellationToken);
+
+        return Ok(ApiResponse<IReadOnlyCollection<GetGroupInvitationResponse>>.Ok(response));
     }
 
     [HttpPost("{id:guid}/accept")]

@@ -12,6 +12,10 @@ public interface IGroupInvitation
         GetMyInvitationsAsync(
             CancellationToken cancellationToken = default);
 
+    Task<List<GetGroupInvitationResponse>>
+        GetGroupInvitationsAsync(Guid groupId,
+            CancellationToken cancellationToken = default);
+
     Task AcceptInvitationAsync(
         Guid invitationId,
         CancellationToken cancellationToken = default);
