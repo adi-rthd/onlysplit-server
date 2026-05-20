@@ -84,7 +84,7 @@ public static class ServiceCollectionExtensions
         {
             options.EnableDetailedErrors = false;
             options.MaximumReceiveMessageSize = 64 * 1024;
-            options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+            options.KeepAliveInterval = TimeSpan.FromSeconds(30);
             options.ClientTimeoutInterval = TimeSpan.FromSeconds(45);
         });
 

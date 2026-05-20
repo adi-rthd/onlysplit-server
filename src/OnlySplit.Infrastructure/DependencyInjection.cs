@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using OnlySplit.Application.Activities.Interfaces;
 using OnlySplit.Application.Activities.Services;
+using OnlySplit.Application.Analytics.Interfaces;
 using OnlySplit.Application.Dashboard.Interfaces;
 using OnlySplit.Application.Dashboard.Services;
 using OnlySplit.Application.Interfaces;
@@ -133,6 +134,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IFriendshipService, FriendshipService>();
         services.AddScoped<IActivityFeedService, ActivityFeedService>();
+        services.AddScoped<IAnalyticsService,AnalyticsService>();
         return services;
     }
 

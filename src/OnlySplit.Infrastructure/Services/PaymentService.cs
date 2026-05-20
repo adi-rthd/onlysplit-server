@@ -17,27 +17,37 @@ public sealed class PaymentService(
     IActivityService activityService,
     IRealtimeNotifier realtimeNotifier) : IPaymentService
 {
-    public async Task<CreateOrderResponse> CreateOrderAsync(CreateOrderRequest request, CancellationToken cancellationToken = default)
+    public async Task<CreateOrderResponse> CreateOrderAsync(
+        CreateOrderRequest request,
+        CancellationToken cancellationToken = default)
     {
         var settlement = await context.Settlements
             .Include(candidate => candidate.Payer)
             .Include(candidate => candidate.Receiver)
-            .FirstOrDefaultAsync(candidate => candidate.Id == request.SettlementId, cancellationToken)
-            ?? throw new NotFoundException("Settlement was not found.");
+            .FirstOrDefaultAsync(
+                candidate => candidate.Id == request.SettlementId,
+                cancellationToken)
+            ?? throw new NotFoundException(
+                "Settlement was not found.");
 
         if (settlement.PayerId != currentUser.UserId)
         {
-            throw new ForbiddenException("Only the settlement payer can create this payment order.");
+            throw new ForbiddenException(
+                "Only the settlement payer can create this payment order.");
         }
 
         if (settlement.Status != SettlementStatuses.Pending)
         {
-            throw new ConflictException("Only pending settlements can be paid.");
+            throw new ConflictException(
+                "Only pending settlements can be paid.");
         }
 
-        var razorpayOrder = await razorpayService.CreateOrderAsync(settlement.Id, settlement.Amount, cancellationToken);
+        var razorpayOrder =
+            await razorpayService.CreateOrderAsync(
+                settlement.Id,
+                settlement.Amount,
+                cancellationToken);
 
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         var payment = new Payment
         {
             SettlementId = settlement.Id,
@@ -46,16 +56,21 @@ public sealed class PaymentService(
         };
 
         context.Payments.Add(payment);
-        await context.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
 
-        await activityService.LogAsync(currentUser.UserId, ActivityTypes.PaymentCreated, new
-        {
-            payment.Id,
-            payment.SettlementId,
-            payment.Amount,
-            payment.RazorpayOrderId
-        }, cancellationToken);
+        await context.SaveChangesAsync(
+            cancellationToken);
+
+        await activityService.LogAsync(
+            currentUser.UserId,
+            ActivityTypes.PaymentCreated,
+            new
+            {
+                payment.Id,
+                payment.SettlementId,
+                payment.Amount,
+                payment.RazorpayOrderId
+            },
+            cancellationToken);
 
         return new CreateOrderResponse(
             payment.Id,
@@ -65,7 +80,6 @@ public sealed class PaymentService(
             razorpayOrder.Currency,
             razorpayOrder.KeyId);
     }
-
     public async Task VerifyAsync(VerifyPaymentRequest request, CancellationToken cancellationToken = default)
     {
         if (!paymentVerificationService.VerifyCheckoutSignature(request.RazorpayOrderId, request.RazorpayPaymentId, request.RazorpaySignature))

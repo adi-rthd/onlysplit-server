@@ -16,7 +16,8 @@ public sealed class RazorpayService(IOptions<RazorpayOptions> options) : IRazorp
         {
             throw new PaymentException("Razorpay credentials are not configured.");
         }
-
+        Console.WriteLine(_options.KeyId);
+        Console.WriteLine(_options.KeySecret);
         var client = new RazorpayClient(_options.KeyId, _options.KeySecret);
         var orderRequest = new Dictionary<string, object>
         {
@@ -30,7 +31,8 @@ public sealed class RazorpayService(IOptions<RazorpayOptions> options) : IRazorp
             }
         };
 
-        dynamic order = await Task.Run(() => client.Order.Create(orderRequest), cancellationToken);
+        dynamic order = client.Order.Create(orderRequest);
+        Console.WriteLine(order);
         string? orderId = Convert.ToString(order["id"]);
         if (string.IsNullOrWhiteSpace(orderId))
         {
