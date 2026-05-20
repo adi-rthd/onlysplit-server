@@ -191,4 +191,28 @@ public sealed class GroupService(
                ))
                .ToArray()
        );
+
+    public async Task DeleteGroup(Guid groudId, CancellationToken cancellationToken = default)
+    {
+        var userId = currentUser.UserId;
+        var groupFound = await context.Groups.FirstOrDefaultAsync(x => x.Id == groudId);
+        if (groupFound is null)
+        {
+            throw new NotFoundException("Group not found.");
+        }
+
+        var groupMember = await context.GroupMembers.FirstOrDefaultAsync(
+            x => (
+                x.UserId == userId &&
+                x.GroupId == groudId
+            ), cancellationToken
+        );
+        if (groupMember is null)
+        {
+            throw new ConflictException("Non-member can't delete the group.");
+
+        }
+        context.Groups.Remove(groupFound);
+        await context.SaveChangesAsync(cancellationToken);
+    }
 }

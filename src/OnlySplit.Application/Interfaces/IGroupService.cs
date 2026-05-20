@@ -10,4 +10,5 @@ public interface IGroupService
     Task<GroupResponse> InviteAsync(Guid id, InviteGroupRequest request, CancellationToken cancellationToken = default);
     Task<GroupResponse> JoinAsync(Guid id, JoinGroupRequest request, CancellationToken cancellationToken = default);
     Task RemoveMemberAsync(Guid id, Guid userId, CancellationToken cancellationToken = default);
+    Task DeleteGroup (Guid groudId, CancellationToken cancellationToken = default);
 }

@@ -12,7 +12,8 @@ namespace OnlySplit.Infrastructure.Services;
 public sealed class SettlementService(
     OnlySplitDbContext context,
     ICurrentUserService currentUser,
-    IActivityService activityService) : ISettlementService
+    IActivityService activityService
+    ) : ISettlementService
 {
     public async Task<IReadOnlyCollection<BalanceResponse>> GetBalancesAsync(Guid groupId, CancellationToken cancellationToken = default)
     {

@@ -203,8 +203,7 @@ public sealed class FriendshipService(
 
         if (friendship is null)
         {
-            throw new NotFoundException(
-                "Friendship not found.");
+            throw new NotFoundException("Friendship not found.");
         }
 
         context.Friendships.Remove(friendship);
