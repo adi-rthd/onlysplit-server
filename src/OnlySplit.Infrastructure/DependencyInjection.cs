@@ -9,7 +9,9 @@ using OnlySplit.Application.Activities.Services;
 using OnlySplit.Application.Analytics.Interfaces;
 using OnlySplit.Application.Dashboard.Interfaces;
 using OnlySplit.Application.Dashboard.Services;
+using OnlySplit.Application.Features.Redis;
 using OnlySplit.Application.Interfaces;
+using OnlySplit.Infrastructure.Auth;
 using OnlySplit.Infrastructure.Authentication;
 using OnlySplit.Infrastructure.Database;
 using OnlySplit.Infrastructure.Payments;
@@ -134,6 +136,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IFriendshipService, FriendshipService>();
         services.AddScoped<IActivityFeedService, ActivityFeedService>();
+        services.AddScoped<ISessionService, RedisSessionService>();
         services.AddScoped<IAnalyticsService,AnalyticsService>();
         return services;
     }

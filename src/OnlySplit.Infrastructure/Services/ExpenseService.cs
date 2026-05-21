@@ -27,12 +27,9 @@ public sealed class ExpenseService(
 
         await strategy.ExecuteAsync(async () =>
         {
-            await using var transaction =
-                await context.Database.BeginTransactionAsync(cancellationToken);
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-            var group = await LoadGroupForMutationAsync(
-                request.GroupId,
-                cancellationToken);
+            var group = await LoadGroupForMutationAsync( request.GroupId, cancellationToken);
 
             EnsureMember(group, currentUser.UserId);
 
