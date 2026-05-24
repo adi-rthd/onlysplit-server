@@ -20,18 +20,63 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<ActionResult<ApiResponse<AuthResponse>>> Login(LoginRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<Task<ApiResponse<object>>>> Login(LoginRequest request, CancellationToken cancellationToken)
     {
         var response = await authService.LoginAsync(request, IpAddress, cancellationToken);
-        return Ok(ApiResponse<AuthResponse>.Ok(response, "Login completed successfully."));
+        Response.Cookies.Append("refreshToken", response.RefreshToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddDays(30)
+            }
+        );
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            response.AccessToken,
+            response.AccessTokenExpiresAt,
+            response.User
+        })
+        );
     }
 
     [HttpPost("refresh")]
     [AllowAnonymous]
-    public async Task<ActionResult<ApiResponse<AuthResponse>>> Refresh(RefreshTokenRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<object>>> Refresh(CancellationToken cancellationToken)
     {
-        var response = await authService.RefreshAsync(request, IpAddress, cancellationToken);
-        return Ok(ApiResponse<AuthResponse>.Ok(response, "Token refreshed successfully."));
+        var refreshToken = Request.Cookies["refreshToken"];
+
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            throw new UnauthorizedAccessException(
+                "Refresh token missing."
+            );
+        }
+
+        var response = await authService.RefreshAsync(new RefreshTokenRequest(refreshToken), IpAddress, cancellationToken);
+
+        Response.Cookies.Append(
+            "refreshToken",
+            response.RefreshToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow
+                    .AddDays(30)
+            }
+        );
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            response.AccessToken,
+            response.AccessTokenExpiresAt,
+            response.User
+        },
+        "Token refreshed successfully."));
     }
 
     [HttpPost("logout")]
