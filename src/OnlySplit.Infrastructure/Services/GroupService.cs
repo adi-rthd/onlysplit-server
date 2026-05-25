@@ -195,10 +195,13 @@ public sealed class GroupService(
     public async Task DeleteGroup(Guid groudId, CancellationToken cancellationToken = default)
     {
         var userId = currentUser.UserId;
-        var groupFound = await context.Groups.FirstOrDefaultAsync(x => x.Id == groudId);
-        if (groupFound is null)
+        var groupFound =
+        await context.Groups.FirstOrDefaultAsync(x => x.Id == groudId)
+        ?? throw new NotFoundException("Group not found.");
+
+        if (groupFound.CreatedBy != userId)
         {
-            throw new NotFoundException("Group not found.");
+            throw new ForbiddenException("You dont have permission to delete this group.");
         }
 
         var groupMember = await context.GroupMembers.FirstOrDefaultAsync(
