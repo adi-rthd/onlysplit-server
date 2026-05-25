@@ -23,12 +23,16 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
     public async Task<ActionResult<Task<ApiResponse<object>>>> Login(LoginRequest request, CancellationToken cancellationToken)
     {
         var response = await authService.LoginAsync(request, IpAddress, cancellationToken);
-        Response.Cookies.Append("refreshToken", response.RefreshToken,
+        Response.Cookies.Append(
+            "refreshToken",
+            response.RefreshToken,
             new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
+                Domain = ".onlylabs.in",
+                Path = "/",
                 Expires = DateTimeOffset.UtcNow.AddDays(30)
             }
         );
@@ -56,7 +60,6 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         }
 
         var response = await authService.RefreshAsync(new RefreshTokenRequest(refreshToken), IpAddress, cancellationToken);
-
         Response.Cookies.Append(
             "refreshToken",
             response.RefreshToken,
@@ -65,11 +68,10 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
-                Expires = DateTimeOffset.UtcNow
-                    .AddDays(30)
-            }
-        );
-
+                Domain = ".onlylabs.in",
+                Path = "/",
+                Expires = DateTimeOffset.UtcNow.AddDays(30)
+            });
         return Ok(ApiResponse<object>.Ok(new
         {
             response.AccessToken,
