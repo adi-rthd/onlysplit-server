@@ -196,13 +196,29 @@ public sealed class GroupService(
     {
         var userId = currentUser.UserId;
         var groupFound =
-        await context.Groups.FirstOrDefaultAsync(x => x.Id == groudId)
-        ?? throw new NotFoundException("Group not found.");
+            await context.Groups.FirstOrDefaultAsync(x => x.Id == groudId)
+            ?? throw new NotFoundException("Group not found.");
 
         if (groupFound.CreatedBy != userId)
         {
             throw new ForbiddenException("You dont have permission to delete this group.");
         }
+        var settlementIds = await context.Settlements
+            .Where(x => x.GroupId == groupFound.Id)
+            .Select(x => x.Id)
+            .ToListAsync();
+
+        var payments = await context.Payments
+            .Where(x => settlementIds.Contains(x.SettlementId))
+            .ToListAsync();
+
+        context.Payments.RemoveRange(payments);
+
+        var expenses = await context.Expenses
+            .Where(x => x.GroupId == groupFound.Id)
+            .ToListAsync();
+            
+        context.Expenses.RemoveRange(expenses);
 
         var groupMember = await context.GroupMembers.FirstOrDefaultAsync(
             x => (
