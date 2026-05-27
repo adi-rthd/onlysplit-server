@@ -17,6 +17,16 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         var response = await authService.SignupAsync(request, IpAddress, cancellationToken);
         return Ok(ApiResponse<AuthResponse>.Ok(response, "Signup completed successfully."));
     }
+    
+    [HttpPut("profile")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<UserResponse>>> UpdateProfile(UpdateProfileRequest request, CancellationToken cancellationToken)
+    {
+
+        var response = await authService.UpdateProfileAsync(request, cancellationToken);
+
+        return Ok(ApiResponse<Object>.Ok(response));
+    }
 
     [HttpPost("login")]
     [AllowAnonymous]

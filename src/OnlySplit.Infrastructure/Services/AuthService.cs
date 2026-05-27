@@ -21,7 +21,36 @@ public sealed class AuthService(
     IOptions<JwtOptions> jwtOptions) : IAuthService
 {
     private readonly JwtOptions _jwtOptions = jwtOptions.Value;
+    public async Task<UserResponse> UpdateProfileAsync(
+    UpdateProfileRequest request,
+    CancellationToken cancellationToken = default)
+    {
+                var userId = currentUser.UserId;
 
+        var user = await context.Users
+            .FirstOrDefaultAsync(
+                x => x.Id == userId,
+                cancellationToken);
+
+        if (user is null)
+            throw new NotFoundException("User not found.");
+
+        user.FirstName = request.FirstName.Trim();
+        user.LastName = request.LastName.Trim();
+        user.AvatarUrl = string.IsNullOrWhiteSpace(request.AvatarUrl) ? null : request.AvatarUrl.Trim();
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        return new UserResponse(
+            user.Id,
+            user.FirstName,
+            user.LastName,
+            user.Email,
+            user.AvatarUrl,
+            user.Role,
+            user.CreatedAt
+        );
+    }
     public async Task<AuthResponse> SignupAsync(
         SignupRequest request,
         string? ipAddress,
