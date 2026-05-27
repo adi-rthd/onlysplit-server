@@ -21,19 +21,13 @@ public sealed class AuthService(
     IOptions<JwtOptions> jwtOptions) : IAuthService
 {
     private readonly JwtOptions _jwtOptions = jwtOptions.Value;
-    public async Task<UserResponse> UpdateProfileAsync(
-    UpdateProfileRequest request,
-    CancellationToken cancellationToken = default)
+    public async Task<UserResponse> UpdateProfileAsync(UpdateProfileRequest request, CancellationToken cancellationToken = default)
     {
-                var userId = currentUser.UserId;
-
-        var user = await context.Users
-            .FirstOrDefaultAsync(
-                x => x.Id == userId,
-                cancellationToken);
-
-        if (user is null)
-            throw new NotFoundException("User not found.");
+        var userId = currentUser.UserId;
+        var user = 
+        await context.Users.FirstOrDefaultAsync(x => x.Id == userId,cancellationToken)
+        ?? throw new NotFoundException("User not found.");
+            
 
         user.FirstName = request.FirstName.Trim();
         user.LastName = request.LastName.Trim();
@@ -51,22 +45,15 @@ public sealed class AuthService(
             user.CreatedAt
         );
     }
-    public async Task<AuthResponse> SignupAsync(
-        SignupRequest request,
-        string? ipAddress,
-        CancellationToken cancellationToken = default)
+    public async Task<AuthResponse> SignupAsync(SignupRequest request, string? ipAddress, CancellationToken cancellationToken = default)
     {
         var email = NormalizeEmail(request.Email);
 
-        var exists = await context.Users
-            .AnyAsync(user => user.Email == email, cancellationToken);
-
-        if (exists)
-        {
-            throw new ConflictException(
-                "A user with this email already exists."
-            );
-        }
+        var exists = 
+        await context.Users.AnyAsync(user => user.Email == email, cancellationToken);
+        
+        if(exists)
+            throw new ConflictException("A user with this email already exists.");
 
         var user = new User
         {

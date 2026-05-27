@@ -25,7 +25,7 @@ public sealed class AnalyticsService(
                 .AsNoTracking()
                 .Include(x => x.Group)
                 .Where(x =>
-                    x.Group.Members.Any(m =>
+                    x.Group!.Members.Any(m =>
                         m.UserId == userId
                     )
                 )
@@ -76,7 +76,7 @@ public sealed class AnalyticsService(
                 .AsNoTracking()
                 .Include(x => x.Group)
                 .Where(x =>
-                    x.Group.Members.Any(m =>
+                    x.Group!.Members.Any(m =>
                         m.UserId == userId
                     )
                 )

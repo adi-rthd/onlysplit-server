@@ -6,11 +6,12 @@ public sealed record SignupRequest(
     string Email,
     string Password,
     string? AvatarUrl);
-public sealed record UpdateProfileRequest(
-    string FirstName,
-    string LastName,
-    string? AvatarUrl
-);
+public sealed class UpdateProfileRequest
+{
+    public string FirstName { get; set; } = default!;
+    public string LastName { get; set; } = default!;
+    public string? AvatarUrl { get; set; }
+}
 
 public sealed record LoginRequest(string Email, string Password);
 
