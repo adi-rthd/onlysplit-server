@@ -149,8 +149,8 @@ public sealed class GroupInvitationService(
         return invitations;
     }
     public async Task AcceptInvitationAsync(
-        Guid invitationId,
-        CancellationToken cancellationToken = default)
+     Guid invitationId,
+     CancellationToken cancellationToken = default)
     {
         var userId = currentUser.UserId;
 
@@ -170,6 +170,12 @@ public sealed class GroupInvitationService(
         {
             throw new ConflictException("Invitation already processed.");
         }
+
+        var acceptedBy = await context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.Id == userId,
+                cancellationToken);
 
         var alreadyMember = await context.GroupMembers
             .AnyAsync(
@@ -191,9 +197,16 @@ public sealed class GroupInvitationService(
             JoinedAt = DateTime.UtcNow
         };
 
-        await context.GroupMembers.AddAsync(groupMember, cancellationToken);
+        await context.GroupMembers.AddAsync(
+            groupMember,
+            cancellationToken);
 
         invitation.Status = "Accepted";
+
+        var acceptedByName =
+            acceptedBy is null
+                ? "A user"
+                : $"{acceptedBy.FirstName} {acceptedBy.LastName}".Trim();
 
         var notification = new Notification
         {
@@ -201,7 +214,7 @@ public sealed class GroupInvitationService(
             UserId = invitation.InvitedBy,
             Type = "group_invitation_accepted",
             Title = "Invitation Accepted",
-            Message = "A user accepted your group invitation.",
+            Message = $"{acceptedByName} accepted your group invitation.",
             CreatedAt = DateTime.UtcNow
         };
 
