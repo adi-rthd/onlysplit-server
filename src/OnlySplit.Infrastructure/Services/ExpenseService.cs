@@ -29,7 +29,7 @@ public sealed class ExpenseService(
         {
             await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-            var group = await LoadGroupForMutationAsync( request.GroupId, cancellationToken);
+            var group = await LoadGroupForMutationAsync(request.GroupId, cancellationToken);
 
             EnsureMember(group, currentUser.UserId);
 
@@ -181,28 +181,48 @@ public sealed class ExpenseService(
         return response;
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(
+    Guid id,
+    CancellationToken cancellationToken = default)
     {
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-
         var expense = await context.Expenses
-            .Include(candidate => candidate.Group)
+            .AsSplitQuery()
+            .Include(expense => expense.Group)
                 .ThenInclude(group => group!.Members)
-            .Include(candidate => candidate.Splits)
-            .FirstOrDefaultAsync(candidate => candidate.Id == id, cancellationToken)
+            .Include(expense => expense.Splits)
+            .FirstOrDefaultAsync(expense => expense.Id == id, cancellationToken)
             ?? throw new NotFoundException("Expense was not found.");
 
         EnsureMember(expense.Group!, currentUser.UserId);
+
         EnsureCanMutateExpense(expense);
 
         var groupId = expense.GroupId;
-        context.Expenses.Remove(expense);
-        await context.SaveChangesAsync(cancellationToken);
-        await settlementService.RegenerateForGroupAsync(groupId, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
 
-        await activityService.LogAsync(currentUser.UserId, ActivityTypes.ExpenseDeleted, new { ExpenseId = id, GroupId = groupId }, cancellationToken);
-        await realtimeNotifier.SendGroupAsync(groupId, "ExpenseDeleted", new { ExpenseId = id, GroupId = groupId }, cancellationToken);
+        context.Expenses.Remove(expense);
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        await settlementService.RegenerateForGroupAsync(groupId, cancellationToken);
+
+        await activityService.LogAsync(currentUser.UserId,
+            ActivityTypes.ExpenseDeleted,
+            new
+            {
+                ExpenseId = id,
+                GroupId = groupId
+            },
+            cancellationToken);
+
+        await realtimeNotifier.SendGroupAsync(groupId,
+            "ExpenseDeleted",
+            new
+            {
+                ExpenseId = id,
+                GroupId = groupId
+            },
+            cancellationToken);
+
         await BroadcastBalanceRefreshAsync(groupId, cancellationToken);
     }
 
