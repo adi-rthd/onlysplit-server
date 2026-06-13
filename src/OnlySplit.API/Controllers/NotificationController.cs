@@ -41,4 +41,15 @@ public sealed class NotificationsController(
             )
         );
     }
+    [HttpPut("read-all")]
+    public async Task<ActionResult<ApiResponse<object>>> MarkAllAsRead(
+     CancellationToken cancellationToken)
+    {
+        await notificationService.MarkAllAsReadAsync(cancellationToken);
+
+        return Ok(
+            ApiResponse<object>.Ok(
+                null,
+                "All notifications marked as read."));
+    }
 }

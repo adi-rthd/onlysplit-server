@@ -63,4 +63,27 @@ public sealed class NotificationService(
 
         await context.SaveChangesAsync(cancellationToken);
     }
+    public async Task MarkAllAsReadAsync(
+    CancellationToken cancellationToken = default)
+    {
+        var userId = currentUser.UserId;
+
+        var notifications = await context.Notifications
+            .Where(x =>
+                x.UserId == userId &&
+                !x.IsRead)
+            .ToListAsync(cancellationToken);
+
+        if (notifications.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var notification in notifications)
+        {
+            notification.IsRead = true;
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
+    }
 }
