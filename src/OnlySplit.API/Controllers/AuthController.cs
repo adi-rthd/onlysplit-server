@@ -20,7 +20,7 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
     
     [HttpPut("profile")]
     [Authorize]
-    public async Task<ActionResult<ApiResponse<UserResponse>>> UpdateProfile( [FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<UserResponse>>> UpdateProfile(UpdateProfileRequest request, CancellationToken cancellationToken)
     {
 
         var response = await authService.UpdateProfileAsync(request, cancellationToken);
