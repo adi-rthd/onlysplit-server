@@ -21,7 +21,7 @@ services:
       Jwt__Secret: ${Jwt__Secret}
       Jwt__Issuer: OnlySplit.API
       Jwt__Audience: OnlySplit.Clients
-      Jwt__AccessTokenMinutes: 15
+      Jwt__AccessTokenMinutes: 300
       Jwt__RefreshTokenDays: 30
 
       Razorpay__KeyId: ${Razorpay__KeyId}
