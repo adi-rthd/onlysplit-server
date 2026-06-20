@@ -116,69 +116,80 @@ public sealed class ExpenseService(
 
     public async Task<ExpenseResponse> UpdateAsync(Guid id, UpdateExpenseRequest request, CancellationToken cancellationToken = default)
     {
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        var strategy = context.Database.CreateExecutionStrategy();
 
-        var expense = await context.Expenses
-            .Include(candidate => candidate.Group)
-                .ThenInclude(group => group!.Members)
-            .Include(candidate => candidate.Splits)
-            .FirstOrDefaultAsync(candidate => candidate.Id == id, cancellationToken)
-            ?? throw new NotFoundException("Expense was not found.");
+        ExpenseResponse? response = null;
+        Guid groupId = Guid.Empty;
 
-        EnsureMember(expense.Group!, currentUser.UserId);
-        EnsureCanMutateExpense(expense);
-
-        if (request.PaidBy.HasValue)
+        await strategy.ExecuteAsync(async () =>
         {
-            EnsureMember(expense.Group!, request.PaidBy.Value);
-            expense.PaidBy = request.PaidBy.Value;
-        }
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(request.Title))
-        {
-            expense.Title = request.Title.Trim();
-        }
+            var expense = await context.Expenses
+                .Include(candidate => candidate.Group)
+                    .ThenInclude(group => group!.Members)
+                .Include(candidate => candidate.Splits)
+                .FirstOrDefaultAsync(candidate => candidate.Id == id, cancellationToken)
+                ?? throw new NotFoundException("Expense was not found.");
 
-        if (request.Description is not null)
-        {
-            expense.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
-        }
+            EnsureMember(expense.Group!, currentUser.UserId);
+            EnsureCanMutateExpense(expense);
 
-        if (request.Amount.HasValue)
-        {
-            expense.Amount = MoneyMath.Round(request.Amount.Value);
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Category))
-        {
-            expense.Category = request.Category.Trim().ToLowerInvariant();
-        }
-
-        var shouldRecalculateSplits = request.Amount.HasValue || request.SplitType is not null || request.Splits is not null;
-        if (shouldRecalculateSplits)
-        {
-            var splitType = NormalizeSplitType(request.SplitType ?? expense.Splits.FirstOrDefault()?.SplitType ?? SplitTypes.Equal);
-            var splitInputs = request.Splits;
-
-            if (splitInputs is null && splitType != SplitTypes.Equal)
+            if (request.PaidBy.HasValue)
             {
-                throw new AppException("Updated split details are required when changing non-equal split amounts.");
+                EnsureMember(expense.Group!, request.PaidBy.Value);
+                expense.PaidBy = request.PaidBy.Value;
             }
 
-            context.ExpenseSplits.RemoveRange(expense.Splits);
-            expense.Splits = BuildSplits(expense.Group!, expense.Amount, splitType, splitInputs ?? Array.Empty<SplitInputDto>());
-        }
+            if (!string.IsNullOrWhiteSpace(request.Title))
+            {
+                expense.Title = request.Title.Trim();
+            }
 
-        await context.SaveChangesAsync(cancellationToken);
-        await settlementService.RegenerateForGroupAsync(expense.GroupId, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+            if (request.Description is not null)
+            {
+                expense.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+            }
 
-        var response = await GetExpenseResponseAsync(expense.Id, cancellationToken);
-        await activityService.LogAsync(currentUser.UserId, ActivityTypes.ExpenseUpdated, new { expense.Id, expense.GroupId, expense.Amount }, cancellationToken);
-        await realtimeNotifier.SendGroupAsync(expense.GroupId, "ExpenseUpdated", response, cancellationToken);
-        await BroadcastBalanceRefreshAsync(expense.GroupId, cancellationToken);
+            if (request.Amount.HasValue)
+            {
+                expense.Amount = MoneyMath.Round(request.Amount.Value);
+            }
 
-        return response;
+            if (!string.IsNullOrWhiteSpace(request.Category))
+            {
+                expense.Category = request.Category.Trim().ToLowerInvariant();
+            }
+
+            var shouldRecalculateSplits = request.Amount.HasValue || request.SplitType is not null || request.Splits is not null;
+            if (shouldRecalculateSplits)
+            {
+                var splitType = NormalizeSplitType(request.SplitType ?? expense.Splits.FirstOrDefault()?.SplitType ?? SplitTypes.Equal);
+                var splitInputs = request.Splits;
+
+                if (splitInputs is null && splitType != SplitTypes.Equal)
+                {
+                    throw new AppException("Updated split details are required when changing non-equal split amounts.");
+                }
+
+                context.ExpenseSplits.RemoveRange(expense.Splits);
+                expense.Splits = BuildSplits(expense.Group!, expense.Amount, splitType, splitInputs ?? Array.Empty<SplitInputDto>());
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
+            await settlementService.RegenerateForGroupAsync(expense.GroupId, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            response = await GetExpenseResponseAsync(expense.Id, cancellationToken);
+            groupId = expense.GroupId;
+
+            await activityService.LogAsync(currentUser.UserId, ActivityTypes.ExpenseUpdated, new { expense.Id, expense.GroupId, expense.Amount }, cancellationToken);
+        });
+
+        await realtimeNotifier.SendGroupAsync(groupId, "ExpenseUpdated", response!, cancellationToken);
+        await BroadcastBalanceRefreshAsync(groupId, cancellationToken);
+
+        return response!;
     }
 
     public async Task DeleteAsync(
