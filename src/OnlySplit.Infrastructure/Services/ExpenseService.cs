@@ -173,7 +173,15 @@ public sealed class ExpenseService(
                 }
 
                 context.ExpenseSplits.RemoveRange(expense.Splits);
-                expense.Splits = BuildSplits(expense.Group!, expense.Amount, splitType, splitInputs ?? Array.Empty<SplitInputDto>());
+                expense.Splits.Clear();
+                await context.SaveChangesAsync(cancellationToken);
+
+                var newSplits = BuildSplits(expense.Group!, expense.Amount, splitType, splitInputs ?? Array.Empty<SplitInputDto>());
+                foreach (var split in newSplits)
+                {
+                    split.ExpenseId = expense.Id;
+                    expense.Splits.Add(split);
+                }
             }
 
             await context.SaveChangesAsync(cancellationToken);
