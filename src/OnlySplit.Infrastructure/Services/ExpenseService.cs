@@ -172,16 +172,23 @@ public sealed class ExpenseService(
                     throw new AppException("Updated split details are required when changing non-equal split amounts.");
                 }
 
-                context.ExpenseSplits.RemoveRange(expense.Splits);
+                // Detach old splits from change tracker and delete via raw SQL
+                foreach (var oldSplit in expense.Splits.ToList())
+                {
+                    context.Entry(oldSplit).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+                }
                 expense.Splits.Clear();
-                await context.SaveChangesAsync(cancellationToken);
 
+                await context.Database.ExecuteSqlInterpolatedAsync(
+                    $"DELETE FROM expense_splits WHERE \"ExpenseId\" = {expense.Id}", cancellationToken);
+
+                // Build and add new splits as fresh entities
                 var newSplits = BuildSplits(expense.Group!, expense.Amount, splitType, splitInputs ?? Array.Empty<SplitInputDto>());
                 foreach (var split in newSplits)
                 {
                     split.ExpenseId = expense.Id;
-                    expense.Splits.Add(split);
                 }
+                context.ExpenseSplits.AddRange(newSplits);
             }
 
             await context.SaveChangesAsync(cancellationToken);
