@@ -31,6 +31,7 @@ services:
 
       Cors__AllowedOrigins__0: https://split.onlylabs.in
       Cors__AllowedOrigins__1: https://onlysplit.com
+      Cors__AllowedOrigins__2: https://app.onlysplit.com
 
       Database__RunMigrationsOnStartup: "true"
       SeedData__Enabled: "false"
