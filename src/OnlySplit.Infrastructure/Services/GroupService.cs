@@ -192,6 +192,56 @@ public sealed class GroupService(
                .ToArray()
        );
 
+    public async Task<GroupResponse> UpdateAsync(Guid id, UpdateGroupRequest request, CancellationToken cancellationToken = default)
+    {
+        var group = await LoadGroupAsync(id, tracking: true, cancellationToken);
+        EnsureOwner(group);
+
+        if (request.Name is not null)
+            group.Name = request.Name.Trim();
+
+        if (request.Description is not null)
+            group.Description = request.Description;
+
+        if (request.Currency is not null)
+            group.Currency = request.Currency;
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await activityService.LogAsync(
+                currentUser.UserId,
+                ActivityTypes.GroupUpdated,
+                new { group.Id, group.Name },
+                cancellationToken);
+        }
+        catch { /* swallow — notification failures don't break the update */ }
+
+        try
+        {
+            var payload = BuildUpdatePayload(group.Id, request);
+            await realtimeNotifier.SendGroupAsync(group.Id, "GroupUpdated", payload, cancellationToken);
+        }
+        catch { /* swallow — notification failures don't break the update */ }
+
+        return await GetByIdAsync(group.Id, cancellationToken);
+    }
+
+    private static object BuildUpdatePayload(Guid groupId, UpdateGroupRequest request)
+    {
+        var changes = new Dictionary<string, object?> { ["GroupId"] = groupId };
+
+        if (request.Name is not null)
+            changes["Name"] = request.Name.Trim();
+        if (request.Description is not null)
+            changes["Description"] = request.Description;
+        if (request.Currency is not null)
+            changes["Currency"] = request.Currency;
+
+        return changes;
+    }
+
     public async Task DeleteGroup(Guid groudId, CancellationToken cancellationToken = default)
     {
         var userId = currentUser.UserId;

@@ -25,3 +25,9 @@ public record GroupResponse(
     decimal TotalSpending,
     IReadOnlyCollection<GroupMemberResponse> Members
 );
+
+public sealed record UpdateGroupRequest(
+    string? Name, 
+    string? Description, 
+    string? Currency
+);

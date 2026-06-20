@@ -53,6 +53,13 @@ public sealed class GroupsController(IGroupService groupService) : ControllerBas
         return Ok(ApiResponse<object>.Ok(null, "Member removed successfully."));
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<ApiResponse<GroupResponse>>> Update(Guid id, UpdateGroupRequest request, CancellationToken cancellationToken)
+    {
+        var response = await groupService.UpdateAsync(id, request, cancellationToken);
+        return Ok(ApiResponse<GroupResponse>.Ok(response, "Group updated successfully."));
+    }
+
     [HttpDelete("{id:guid}/delete")]
     public async Task<ActionResult<ApiResponse<object>>> DeleteGroup(Guid id, CancellationToken cancellationToken)
     {

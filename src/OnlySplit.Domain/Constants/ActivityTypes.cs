@@ -14,4 +14,5 @@ public static class ActivityTypes
     public const string PaymentCompleted = "payment.completed";
     public const string PaymentFailed = "payment.failed";
     public const string PaymentRefunded = "payment.refunded";
+    public const string GroupUpdated = "group.updated";
 }
