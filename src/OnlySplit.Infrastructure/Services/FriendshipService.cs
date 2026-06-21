@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using OnlySplit.Application.Features.Auth;
 using OnlySplit.Application.Features.Friendships;
 using OnlySplit.Application.Interfaces;
 using OnlySplit.Domain.Entities;
@@ -277,5 +278,45 @@ public sealed class FriendshipService(
         context.Friendships.Remove(friendship);
 
         await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<UserSearchResponse>>
+        SearchUsersAsync(
+            string query,
+            CancellationToken cancellationToken = default)
+    {
+        query = query.Trim().ToLower();
+
+        var userId = currentUser.UserId;
+
+        var friendshipUserIds = await context.Friendships
+            .AsNoTracking()
+            .Where(x =>
+                x.RequesterId == userId || x.AddresseeId == userId)
+            .Select(x => x.RequesterId == userId ? x.AddresseeId : x.RequesterId)
+            .ToListAsync(cancellationToken);
+
+        var excludeIds = friendshipUserIds.ToHashSet();
+        excludeIds.Add(userId);
+
+        return await context.Users
+            .AsNoTracking()
+            .Where(x =>
+                !excludeIds.Contains(x.Id) &&
+                (
+                    x.Email.ToLower().Contains(query) ||
+                    x.FirstName.ToLower().Contains(query) ||
+                    x.LastName.ToLower().Contains(query)
+                ))
+            .OrderBy(x => x.FirstName)
+            .Take(10)
+            .Select(x => new UserSearchResponse(
+                x.Id,
+                x.FirstName,
+                x.LastName,
+                x.Email,
+                x.AvatarUrl
+            ))
+            .ToListAsync(cancellationToken);
     }
 }

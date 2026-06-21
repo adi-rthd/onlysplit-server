@@ -1,3 +1,4 @@
+using OnlySplit.Application.Features.Auth;
 using OnlySplit.Application.Features.Friendships;
 
 namespace OnlySplit.Application.Interfaces;
@@ -27,4 +28,9 @@ public interface IFriendshipService
     Task RemoveFriendAsync(
         Guid friendId,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyCollection<UserSearchResponse>>
+        SearchUsersAsync(
+            string query,
+            CancellationToken cancellationToken = default);
 }

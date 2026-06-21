@@ -286,32 +286,4 @@ public sealed class AuthService(
 
     private static string NormalizeEmail(string email)
         => email.Trim().ToLowerInvariant();
-
-    public async Task<IReadOnlyCollection<UserSearchResponse>>
-        SearchUsersAsync(
-            string query,
-            CancellationToken cancellationToken = default)
-    {
-        query = query.Trim().ToLower();
-
-        return await context.Users
-            .AsNoTracking()
-            .Where(x =>
-                x.Id != currentUser.UserId &&
-                (
-                    x.Email.ToLower().Contains(query) ||
-                    x.FirstName.ToLower().Contains(query) ||
-                    x.LastName.ToLower().Contains(query)
-                ))
-            .OrderBy(x => x.FirstName)
-            .Take(10)
-            .Select(x => new UserSearchResponse(
-                x.Id,
-                x.FirstName,
-                x.LastName,
-                x.Email,
-                x.AvatarUrl
-            ))
-            .ToListAsync(cancellationToken);
-    }
 }

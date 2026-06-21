@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OnlySplit.Application.Features.Auth;
 using OnlySplit.Application.Features.Friendships;
 using OnlySplit.Application.Interfaces;
 using OnlySplit.Shared.Responses;
@@ -109,5 +110,16 @@ public sealed class FriendshipController(
                 "Friend removed."
             )
         );
+    }
+
+    [HttpGet("search")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<UserSearchResponse>>>> Search(
+        [FromQuery] string q,
+        CancellationToken cancellationToken)
+    {
+        var response = await friendshipService.SearchUsersAsync(q, cancellationToken);
+
+        return Ok(ApiResponse<IReadOnlyCollection<UserSearchResponse>>
+            .Ok(response));
     }
 }
