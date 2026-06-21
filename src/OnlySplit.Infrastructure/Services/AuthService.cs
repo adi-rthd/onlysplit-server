@@ -286,4 +286,25 @@ public sealed class AuthService(
 
     private static string NormalizeEmail(string email)
         => email.Trim().ToLowerInvariant();
+
+    public async Task ChangePasswordAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await context.Users
+            .FirstOrDefaultAsync(x => x.Id == currentUser.UserId, cancellationToken)
+            ?? throw new NotFoundException("User not found.");
+
+        if (!PasswordHasher.Verify(request.CurrentPassword, user.PasswordHash))
+        {
+            throw new UnauthorizedAccessException("Current password is incorrect.");
+        }
+
+        if (request.NewPassword.Length < 6)
+        {
+            throw new AppException("New password must be at least 6 characters.");
+        }
+
+        user.PasswordHash = PasswordHasher.Hash(request.NewPassword);
+
+        await context.SaveChangesAsync(cancellationToken);
+    }
 }

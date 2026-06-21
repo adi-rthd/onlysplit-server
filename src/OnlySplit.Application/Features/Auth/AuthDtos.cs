@@ -41,3 +41,8 @@ public sealed record UserSearchResponse(
     string Email,
     string? AvatarUrl
 );
+
+public sealed record ChangePasswordRequest(
+    string CurrentPassword,
+    string NewPassword
+);

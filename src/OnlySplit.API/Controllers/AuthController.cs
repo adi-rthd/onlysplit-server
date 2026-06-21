@@ -25,7 +25,14 @@ public sealed class AuthController(IAuthService authService, IWebHostEnvironment
     public async Task<ActionResult<ApiResponse<AuthResponse>>> Signup(SignupRequest request, CancellationToken cancellationToken)
     {
         var response = await authService.SignupAsync(request, IpAddress, cancellationToken);
-        return Ok(ApiResponse<AuthResponse>.Ok(response, "Signup completed successfully."));
+        Response.Cookies.Append("refreshToken", response.RefreshToken, RefreshCookieOptions);
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            response.AccessToken,
+            response.AccessTokenExpiresAt,
+            response.User
+        }, "Signup completed successfully."));
     }
     
     [HttpPut("profile")]
@@ -56,9 +63,15 @@ public sealed class AuthController(IAuthService authService, IWebHostEnvironment
 
     [HttpPost("refresh")]
     [AllowAnonymous]
-    public async Task<ActionResult<ApiResponse<object>>> Refresh(CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<object>>> Refresh([FromBody] RefreshTokenRequest? body, CancellationToken cancellationToken)
     {
+        // Cookie-first (browser), body fallback (Capacitor/mobile)
         var refreshToken = Request.Cookies["refreshToken"];
+
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            refreshToken = body?.RefreshToken;
+        }
 
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
@@ -110,4 +123,12 @@ public sealed class AuthController(IAuthService authService, IWebHostEnvironment
     }
 
     private string? IpAddress => HttpContext.Connection.RemoteIpAddress?.ToString();
+
+    [HttpPut("change-password")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<object>>> ChangePassword(ChangePasswordRequest request, CancellationToken cancellationToken)
+    {
+        await authService.ChangePasswordAsync(request, cancellationToken);
+        return Ok(ApiResponse<object>.Ok(null, "Password changed successfully."));
+    }
 }
