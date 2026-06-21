@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using OnlySplit.Application.Features.Friendships;
 using OnlySplit.Application.Interfaces;
 using OnlySplit.Domain.Entities;
@@ -9,7 +10,9 @@ namespace OnlySplit.Infrastructure.Services;
 
 public sealed class FriendshipService(
     OnlySplitDbContext context,
-    ICurrentUserService currentUser
+    ICurrentUserService currentUser,
+    IRealtimeNotifier realtimeNotifier,
+    ILogger<FriendshipService> logger
 ) : IFriendshipService
 {
     public async Task SendRequestAsync(
@@ -44,6 +47,10 @@ public sealed class FriendshipService(
                 "Friend request already exists.");
         }
 
+        var sender = await context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
+
         var friendship = new Friendship
         {
             Id = Guid.NewGuid(),
@@ -58,6 +65,27 @@ public sealed class FriendshipService(
             cancellationToken);
 
         await context.SaveChangesAsync(cancellationToken);
+
+        // Real-time notification to recipient
+        try
+        {
+            await realtimeNotifier.SendActivityAsync(
+                request.AddresseeId,
+                "FriendRequestReceived",
+                new
+                {
+                    FriendshipId = friendship.Id,
+                    SenderId = userId,
+                    SenderName = sender is not null
+                        ? $"{sender.FirstName} {sender.LastName}".Trim()
+                        : "Unknown"
+                },
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send FriendRequestReceived notification.");
+        }
     }
 
     public async Task<IReadOnlyCollection<FriendRequestResponse>>
@@ -90,6 +118,7 @@ public sealed class FriendshipService(
         var userId = currentUser.UserId;
 
         var friendship = await context.Friendships
+            .Include(x => x.Addressee)
             .FirstOrDefaultAsync(
                 x =>
                     x.Id == friendshipId &&
@@ -111,6 +140,27 @@ public sealed class FriendshipService(
         friendship.Status = "Accepted";
 
         await context.SaveChangesAsync(cancellationToken);
+
+        // Notify the original sender
+        try
+        {
+            await realtimeNotifier.SendActivityAsync(
+                friendship.RequesterId,
+                "FriendRequestAccepted",
+                new
+                {
+                    FriendshipId = friendship.Id,
+                    RecipientId = userId,
+                    RecipientName = friendship.Addressee is not null
+                        ? $"{friendship.Addressee.FirstName} {friendship.Addressee.LastName}".Trim()
+                        : "Unknown"
+                },
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send FriendRequestAccepted notification.");
+        }
     }
 
     public async Task RejectRequestAsync(
@@ -141,6 +191,24 @@ public sealed class FriendshipService(
         friendship.Status = "Rejected";
 
         await context.SaveChangesAsync(cancellationToken);
+
+        // Notify the original sender
+        try
+        {
+            await realtimeNotifier.SendActivityAsync(
+                friendship.RequesterId,
+                "FriendRequestRejected",
+                new
+                {
+                    FriendshipId = friendship.Id,
+                    RecipientId = userId
+                },
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send FriendRequestRejected notification.");
+        }
     }
 
     public async Task<IReadOnlyCollection<FriendResponse>>

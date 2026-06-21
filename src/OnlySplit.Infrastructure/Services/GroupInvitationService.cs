@@ -1,6 +1,7 @@
 using System.Text.Json;
 using OnlySplit.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using OnlySplit.Application.Features.GroupInvitation;
 using OnlySplit.Application.Features.Notifications;
 using OnlySplit.Application.Interfaces;
@@ -10,7 +11,9 @@ namespace OnlySplit.Infrastructure.Services;
 
 public sealed class GroupInvitationService(
     OnlySplitDbContext context,
-    ICurrentUserService currentUser) : IGroupInvitation
+    ICurrentUserService currentUser,
+    IRealtimeNotifier realtimeNotifier,
+    ILogger<GroupInvitationService> logger) : IGroupInvitation
 {
 
     public async Task SendInvitationAsync(
@@ -92,6 +95,33 @@ public sealed class GroupInvitationService(
             cancellationToken);
 
         await context.SaveChangesAsync(cancellationToken);
+
+        // Real-time notification to invitee
+        try
+        {
+            var sender = await context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == currentUserId, cancellationToken);
+
+            await realtimeNotifier.SendActivityAsync(
+                request.InvitedUserId,
+                "GroupInvitationReceived",
+                new
+                {
+                    InvitationId = invitation.Id,
+                    GroupId = group.Id,
+                    GroupName = group.Name,
+                    SenderId = currentUserId,
+                    SenderName = sender is not null
+                        ? $"{sender.FirstName} {sender.LastName}".Trim()
+                        : "Unknown"
+                },
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send GroupInvitationReceived notification.");
+        }
     }
     public async Task<IReadOnlyCollection<GroupInvitationResponse>>
     GetMyInvitationsAsync(CancellationToken cancellationToken = default)
@@ -223,6 +253,31 @@ public sealed class GroupInvitationService(
             cancellationToken);
 
         await context.SaveChangesAsync(cancellationToken);
+
+        // Real-time notification to inviter
+        try
+        {
+            var group = await context.Groups
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == invitation.GroupId, cancellationToken);
+
+            await realtimeNotifier.SendActivityAsync(
+                invitation.InvitedBy,
+                "GroupInvitationAccepted",
+                new
+                {
+                    InvitationId = invitation.Id,
+                    GroupId = invitation.GroupId,
+                    GroupName = group?.Name ?? "Unknown",
+                    RecipientId = userId,
+                    RecipientName = acceptedByName
+                },
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send GroupInvitationAccepted notification.");
+        }
     }
 
     public async Task RejectInvitationAsync(
@@ -246,5 +301,24 @@ public sealed class GroupInvitationService(
         invitation.Status = "Rejected";
 
         await context.SaveChangesAsync(cancellationToken);
+
+        // Real-time notification to inviter
+        try
+        {
+            await realtimeNotifier.SendActivityAsync(
+                invitation.InvitedBy,
+                "GroupInvitationRejected",
+                new
+                {
+                    InvitationId = invitation.Id,
+                    GroupId = invitation.GroupId,
+                    RecipientId = userId
+                },
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send GroupInvitationRejected notification.");
+        }
     }
 }
