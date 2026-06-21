@@ -20,4 +20,14 @@ public class Notification
     public bool IsRead { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // New fields for enhanced notifications
+    public Guid? ReferenceId { get; set; }
+    public Guid? ActorUserId { get; set; }
+    public DateTimeOffset? ReadAt { get; set; }
+    public bool IsArchived { get; set; } = false;
+    public DateTimeOffset? ArchivedAt { get; set; }
+
+    // Navigation
+    public User? ActorUser { get; set; }
 }

@@ -9,6 +9,8 @@ using OnlySplit.Domain.Exceptions;
 using OnlySplit.Application.Interfaces;
 using OnlySplit.Application.Features.Redis;
 using OnlySplit.Infrastructure.Authentication.Redis;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace OnlySplit.Infrastructure.Services;
 
@@ -21,17 +23,54 @@ public sealed class AuthService(
     IOptions<JwtOptions> jwtOptions) : IAuthService
 {
     private readonly JwtOptions _jwtOptions = jwtOptions.Value;
+
+    private static readonly Regex UpiIdRegex = new(
+        @"^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$",
+        RegexOptions.Compiled);
+
+    private static readonly HashSet<string> ValidPreferredUpiApps = new(StringComparer.Ordinal)
+    {
+        "GooglePay", "PhonePe", "Paytm", "None"
+    };
+
+    private static readonly HashSet<string> NotificationPreferencesKeys = new(StringComparer.Ordinal)
+    {
+        "expenseAdded", "settlementRequested", "settlementConfirmed", "settlementRejected", "pushNotifications"
+    };
+
     public async Task<UserResponse> UpdateProfileAsync(UpdateProfileRequest request, CancellationToken cancellationToken = default)
     {
         var userId = currentUser.UserId;
         var user = 
-        await context.Users.FirstOrDefaultAsync(x => x.Id == userId,cancellationToken)
+        await context.Users.FirstOrDefaultAsync(x => x.Id == userId, cancellationToken)
         ?? throw new NotFoundException("User not found.");
-            
+
+        // Validate UPI ID if provided (null/empty is allowed for clearing)
+        if (!string.IsNullOrEmpty(request.UpiId))
+        {
+            if (!UpiIdRegex.IsMatch(request.UpiId))
+                throw new AppException("Invalid UPI ID format. Expected format: username@provider");
+        }
+
+        // Validate PreferredUpiApp if provided
+        if (request.PreferredUpiApp is not null && !ValidPreferredUpiApps.Contains(request.PreferredUpiApp))
+        {
+            throw new AppException("Invalid preferred app. Allowed values: GooglePay, PhonePe, Paytm, None");
+        }
+
+        // Validate NotificationPreferencesJson if provided (null is allowed for clearing)
+        if (request.NotificationPreferencesJson is not null)
+        {
+            ValidateNotificationPreferencesJson(request.NotificationPreferencesJson);
+        }
 
         user.FirstName = request.FirstName.Trim();
         user.LastName = request.LastName.Trim();
         user.AvatarUrl = string.IsNullOrWhiteSpace(request.AvatarUrl) ? null : request.AvatarUrl.Trim();
+        user.UpiId = string.IsNullOrEmpty(request.UpiId) ? null : request.UpiId.Trim();
+        user.PreferredUpiApp = request.PreferredUpiApp;
+        user.NotificationPreferencesJson = request.NotificationPreferencesJson;
+        user.UpdatedAt = DateTimeOffset.UtcNow;
 
         await context.SaveChangesAsync(cancellationToken);
 
@@ -42,8 +81,54 @@ public sealed class AuthService(
             user.Email,
             user.AvatarUrl,
             user.Role,
-            user.CreatedAt
+            user.CreatedAt,
+            user.UpiId,
+            user.PreferredUpiApp,
+            user.NotificationPreferencesJson,
+            user.UpdatedAt
         );
+    }
+
+    private static void ValidateNotificationPreferencesJson(string json)
+    {
+        JsonDocument doc;
+        try
+        {
+            doc = JsonDocument.Parse(json);
+        }
+        catch (JsonException)
+        {
+            throw new AppException("Notification preferences must be valid JSON.");
+        }
+
+        using (doc)
+        {
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                throw new AppException("Invalid notification preferences format.");
+            }
+
+            var properties = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var property in doc.RootElement.EnumerateObject())
+            {
+                if (!NotificationPreferencesKeys.Contains(property.Name))
+                {
+                    throw new AppException("Invalid notification preferences format.");
+                }
+
+                if (property.Value.ValueKind != JsonValueKind.True && property.Value.ValueKind != JsonValueKind.False)
+                {
+                    throw new AppException("Invalid notification preferences format.");
+                }
+
+                properties.Add(property.Name);
+            }
+
+            if (properties.Count != NotificationPreferencesKeys.Count)
+            {
+                throw new AppException("Invalid notification preferences format.");
+            }
+        }
     }
     public async Task<AuthResponse> SignupAsync(SignupRequest request, string? ipAddress, CancellationToken cancellationToken = default)
     {

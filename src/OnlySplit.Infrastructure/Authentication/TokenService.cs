@@ -59,5 +59,6 @@ public sealed class TokenService(IOptions<JwtOptions> options) : ITokenService
     }
 
     public UserResponse ToUserResponse(User user) =>
-        new(user.Id, user.FirstName, user.LastName, user.Email, user.AvatarUrl, user.Role, user.CreatedAt);
+        new(user.Id, user.FirstName, user.LastName, user.Email, user.AvatarUrl, user.Role, user.CreatedAt,
+            user.UpiId, user.PreferredUpiApp, user.NotificationPreferencesJson, user.UpdatedAt);
 }

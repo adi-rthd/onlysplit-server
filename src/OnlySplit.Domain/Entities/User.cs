@@ -11,6 +11,12 @@ public class User
     public string Role { get; set; } = Constants.UserRoles.User;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
+    // Profile extension fields
+    public string? UpiId { get; set; }
+    public string? PreferredUpiApp { get; set; }
+    public string? NotificationPreferencesJson { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
+
     public ICollection<Group> CreatedGroups { get; set; } = new List<Group>();
     public ICollection<GroupMember> GroupMemberships { get; set; } = new List<GroupMember>();
     public ICollection<Expense> PaidExpenses { get; set; } = new List<Expense>();

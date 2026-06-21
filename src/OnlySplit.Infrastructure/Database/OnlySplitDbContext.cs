@@ -18,6 +18,8 @@ public class OnlySplitDbContext(DbContextOptions<OnlySplitDbContext> options) : 
     public DbSet<GroupInvitation> GroupInvitations => Set<GroupInvitation>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<SettlementPayment> SettlementPayments => Set<SettlementPayment>();
+    public DbSet<SettlementAudit> SettlementAudits => Set<SettlementAudit>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

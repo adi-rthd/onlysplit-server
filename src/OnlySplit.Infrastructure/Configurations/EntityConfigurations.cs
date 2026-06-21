@@ -20,6 +20,12 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(user => user.Role).HasMaxLength(50).IsRequired();
         builder.Property(user => user.CreatedAt).IsRequired();
 
+        // Profile extension columns
+        builder.Property(user => user.UpiId).HasMaxLength(100);
+        builder.Property(user => user.PreferredUpiApp).HasMaxLength(30);
+        builder.Property(user => user.NotificationPreferencesJson).HasColumnType("jsonb");
+        builder.Property(user => user.UpdatedAt);
+
         builder.HasIndex(user => user.Email).IsUnique();
     }
 }
@@ -291,12 +297,28 @@ public sealed class NotificationConfiguration
         builder.Property(x => x.CreatedAt)
             .IsRequired();
 
+        // New columns for enhanced notifications
+        builder.Property(x => x.ReferenceId);
+        builder.Property(x => x.ActorUserId);
+        builder.Property(x => x.ReadAt);
+        builder.Property(x => x.IsArchived).HasDefaultValue(false);
+        builder.Property(x => x.ArchivedAt);
+
         builder.HasIndex(x => x.UserId);
+
+        // Composite index for efficient notification queries (UserId, IsRead, CreatedAt DESC)
+        builder.HasIndex(x => new { x.UserId, x.IsRead, x.CreatedAt })
+            .IsDescending(false, false, true);
 
         builder.HasOne(x => x.User)
             .WithMany()
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(x => x.ActorUser)
+            .WithMany()
+            .HasForeignKey(x => x.ActorUserId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
 

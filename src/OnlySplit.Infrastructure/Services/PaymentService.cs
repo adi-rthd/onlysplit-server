@@ -97,7 +97,7 @@ public sealed class PaymentService(
             throw new ForbiddenException("Only the settlement payer can verify this payment.");
         }
 
-        if (payment.Status == PaymentStatuses.Completed && settlement.Status == SettlementStatuses.Completed)
+        if (payment.Status == PaymentStatuses.Completed && settlement.Status == SettlementStatuses.Settled)
         {
             await transaction.CommitAsync(cancellationToken);
             return;
@@ -111,7 +111,7 @@ public sealed class PaymentService(
         payment.RazorpayPaymentId = request.RazorpayPaymentId;
         payment.RazorpaySignature = request.RazorpaySignature;
         payment.Status = PaymentStatuses.Completed;
-        settlement.Status = SettlementStatuses.Completed;
+        settlement.Status = SettlementStatuses.Settled;
 
         await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -172,7 +172,7 @@ public sealed class PaymentService(
         {
             payment.RazorpayPaymentId ??= paymentId;
             payment.Status = PaymentStatuses.Completed;
-            payment.Settlement.Status = SettlementStatuses.Completed;
+            payment.Settlement.Status = SettlementStatuses.Settled;
         }
         else if (eventName == "payment.failed")
         {

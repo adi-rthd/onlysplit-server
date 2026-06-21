@@ -11,6 +11,9 @@ public sealed class UpdateProfileRequest
     public string FirstName { get; set; } = default!;
     public string LastName { get; set; } = default!;
     public string? AvatarUrl { get; set; }
+    public string? UpiId { get; set; }
+    public string? PreferredUpiApp { get; set; }
+    public string? NotificationPreferencesJson { get; set; }
 }
 
 public sealed record LoginRequest(string Email, string Password);
@@ -26,7 +29,11 @@ public sealed record UserResponse(
     string Email,
     string? AvatarUrl,
     string Role,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    string? UpiId = null,
+    string? PreferredUpiApp = null,
+    string? NotificationPreferencesJson = null,
+    DateTimeOffset? UpdatedAt = null);
 
 public sealed record AuthResponse(
     string AccessToken,

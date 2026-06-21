@@ -117,6 +117,8 @@ public static class DependencyInjection
             options.Currency = razorpayOptions.Currency;
         });
 
+        services.Configure<FileStorageOptions>(configuration.GetSection(FileStorageOptions.SectionName));
+
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<ITokenService, TokenService>();
@@ -138,6 +140,7 @@ public static class DependencyInjection
         services.AddScoped<IActivityFeedService, ActivityFeedService>();
         services.AddScoped<ISessionService, RedisSessionService>();
         services.AddScoped<IAnalyticsService,AnalyticsService>();
+        services.AddScoped<IFileUploadService, FileUploadService>();
         return services;
     }
 

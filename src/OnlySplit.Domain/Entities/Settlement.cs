@@ -14,4 +14,5 @@ public class Settlement
     public User? Payer { get; set; }
     public User? Receiver { get; set; }
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
+    public ICollection<SettlementPayment> SettlementPayments { get; set; } = new List<SettlementPayment>();
 }

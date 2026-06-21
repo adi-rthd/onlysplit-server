@@ -7,3 +7,5 @@ obj/
 *.lscache
 .env
 .env.*
+*.md
+.config.kiro

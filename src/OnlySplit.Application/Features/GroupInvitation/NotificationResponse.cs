@@ -5,8 +5,9 @@ public sealed record NotificationResponse(
     string Type,
     string Title,
     string? Message,
-    string? Payload,
-    string invitedByName,
     bool IsRead,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    Guid? ReferenceId = null,
+    Guid? ActorUserId = null,
+    DateTimeOffset? ReadAt = null
 );

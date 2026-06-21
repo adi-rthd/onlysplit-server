@@ -134,7 +134,7 @@ public sealed class SettlementService(
 
         var completedSettlements = await context.Settlements
             .AsNoTracking()
-            .Where(settlement => settlement.GroupId == groupId && settlement.Status == SettlementStatuses.Completed)
+            .Where(settlement => settlement.GroupId == groupId && settlement.Status == SettlementStatuses.Settled)
             .ToListAsync(cancellationToken);
 
         foreach (var settlement in completedSettlements)
