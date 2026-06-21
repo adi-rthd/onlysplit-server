@@ -13,6 +13,10 @@ public interface IFriendshipService
         GetRequestsAsync(
             CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyCollection<SentFriendRequestResponse>>
+        GetSentRequestsAsync(
+            CancellationToken cancellationToken = default);
+
     Task AcceptRequestAsync(
         Guid friendshipId,
         CancellationToken cancellationToken = default);

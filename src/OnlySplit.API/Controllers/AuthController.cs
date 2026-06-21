@@ -8,8 +8,18 @@ namespace OnlySplit.API.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public sealed class AuthController(IAuthService authService) : ControllerBase
+public sealed class AuthController(IAuthService authService, IWebHostEnvironment env) : ControllerBase
 {
+    private CookieOptions RefreshCookieOptions => new()
+    {
+        HttpOnly = true,
+        Secure = !env.IsDevelopment(),
+        SameSite = env.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+        Domain = env.IsDevelopment() ? null : ".onlylabs.in",
+        Path = "/",
+        Expires = DateTimeOffset.UtcNow.AddDays(30)
+    };
+
     [HttpPost("signup")]
     [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<AuthResponse>>> Signup(SignupRequest request, CancellationToken cancellationToken)
@@ -33,19 +43,7 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
     public async Task<ActionResult<Task<ApiResponse<object>>>> Login(LoginRequest request, CancellationToken cancellationToken)
     {
         var response = await authService.LoginAsync(request, IpAddress, cancellationToken);
-        Response.Cookies.Append(
-            "refreshToken",
-            response.RefreshToken,
-            new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Domain = ".onlylabs.in",
-                Path = "/",
-                Expires = DateTimeOffset.UtcNow.AddDays(30)
-            }
-        );
+        Response.Cookies.Append("refreshToken", response.RefreshToken, RefreshCookieOptions);
 
         return Ok(ApiResponse<object>.Ok(new
         {
@@ -70,18 +68,7 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         }
 
         var response = await authService.RefreshAsync(new RefreshTokenRequest(refreshToken), IpAddress, cancellationToken);
-        Response.Cookies.Append(
-            "refreshToken",
-            response.RefreshToken,
-            new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Domain = ".onlylabs.in",
-                Path = "/",
-                Expires = DateTimeOffset.UtcNow.AddDays(30)
-            });
+        Response.Cookies.Append("refreshToken", response.RefreshToken, RefreshCookieOptions);
         return Ok(ApiResponse<object>.Ok(new
         {
             response.AccessToken,
@@ -105,9 +92,9 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         Response.Cookies.Delete("refreshToken", new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-            Domain = ".onlylabs.in",
+            Secure = !env.IsDevelopment(),
+            SameSite = env.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+            Domain = env.IsDevelopment() ? null : ".onlylabs.in",
             Path = "/"
         });
 

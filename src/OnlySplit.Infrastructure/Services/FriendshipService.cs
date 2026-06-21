@@ -112,6 +112,29 @@ public sealed class FriendshipService(
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyCollection<SentFriendRequestResponse>>
+        GetSentRequestsAsync(
+            CancellationToken cancellationToken = default)
+    {
+        var userId = currentUser.UserId;
+
+        return await context.Friendships
+            .AsNoTracking()
+            .Where(x =>
+                x.RequesterId == userId &&
+                x.Status == "Pending")
+            .Include(x => x.Addressee)
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new SentFriendRequestResponse(
+                x.Id,
+                x.AddresseeId,
+                $"{x.Addressee.FirstName} {x.Addressee.LastName}",
+                x.Status,
+                x.CreatedAt
+            ))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AcceptRequestAsync(
         Guid friendshipId,
         CancellationToken cancellationToken = default)

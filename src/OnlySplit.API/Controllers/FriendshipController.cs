@@ -46,6 +46,21 @@ public sealed class FriendshipController(
         );
     }
 
+    [HttpGet("sent")]
+    public async Task<ActionResult<
+        ApiResponse<IReadOnlyCollection<SentFriendRequestResponse>>>>
+        Sent(CancellationToken cancellationToken)
+    {
+        var response = await friendshipService
+            .GetSentRequestsAsync(cancellationToken);
+
+        return Ok(
+            ApiResponse<
+                IReadOnlyCollection<SentFriendRequestResponse>>
+                .Ok(response)
+        );
+    }
+
     [HttpPost("{id:guid}/accept")]
     public async Task<ActionResult<ApiResponse<string>>>
         Accept(

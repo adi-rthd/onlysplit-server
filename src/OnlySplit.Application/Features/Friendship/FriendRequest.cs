@@ -11,3 +11,11 @@ public sealed record FriendRequestResponse(
     string Status,
     DateTime CreatedAt
 );
+
+public sealed record SentFriendRequestResponse(
+    Guid Id,
+    Guid AddresseeId,
+    string AddresseeName,
+    string Status,
+    DateTime CreatedAt
+);
