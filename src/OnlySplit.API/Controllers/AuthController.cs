@@ -93,9 +93,24 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
 
     [HttpPost("logout")]
     [Authorize]
-    public async Task<ActionResult<ApiResponse<object>>> Logout(LogoutRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<object>>> Logout(CancellationToken cancellationToken)
     {
-        await authService.LogoutAsync(request, IpAddress, cancellationToken);
+        var refreshToken = Request.Cookies["refreshToken"];
+
+        if (!string.IsNullOrWhiteSpace(refreshToken))
+        {
+            await authService.LogoutAsync(new LogoutRequest(refreshToken), IpAddress, cancellationToken);
+        }
+
+        Response.Cookies.Delete("refreshToken", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Domain = ".onlylabs.in",
+            Path = "/"
+        });
+
         return Ok(ApiResponse<object>.Ok(null, "Logged out successfully."));
     }
 
