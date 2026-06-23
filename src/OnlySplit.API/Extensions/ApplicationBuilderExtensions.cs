@@ -107,9 +107,9 @@ public static class ApplicationBuilderExtensions
         app.UseRateLimiter();
 
         app.MapControllers().RequireRateLimiting("api");
-        app.MapHub<ActivityHub>("/hubs/activity");
-        app.MapHub<GroupHub>("/hubs/groups");
-        app.MapHub<PaymentHub>("/hubs/payments");
+        app.MapHub<ActivityHub>("/hubs/activity").RequireCors("OnlySplitCors");
+        app.MapHub<GroupHub>("/hubs/groups").RequireCors("OnlySplitCors");
+        app.MapHub<PaymentHub>("/hubs/payments").RequireCors("OnlySplitCors");
 
         app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "OnlySplit.API" }));
 
