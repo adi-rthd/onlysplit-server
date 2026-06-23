@@ -31,6 +31,7 @@ public sealed class AuthController(IAuthService authService, IWebHostEnvironment
         {
             response.AccessToken,
             response.AccessTokenExpiresAt,
+            response.RefreshToken,
             response.User
         }, "Signup completed successfully."));
     }
@@ -56,6 +57,7 @@ public sealed class AuthController(IAuthService authService, IWebHostEnvironment
         {
             response.AccessToken,
             response.AccessTokenExpiresAt,
+            response.RefreshToken,
             response.User
         })
         );
@@ -65,12 +67,12 @@ public sealed class AuthController(IAuthService authService, IWebHostEnvironment
     [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<object>>> Refresh([FromBody] RefreshTokenRequest? body, CancellationToken cancellationToken)
     {
-        // Cookie-first (browser), body fallback (Capacitor/mobile)
-        var refreshToken = Request.Cookies["refreshToken"];
+        // Body-first (Capacitor/mobile), cookie fallback (browser)
+        var refreshToken = body?.RefreshToken;
 
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
-            refreshToken = body?.RefreshToken;
+            refreshToken = Request.Cookies["refreshToken"];
         }
 
         if (string.IsNullOrWhiteSpace(refreshToken))
@@ -86,6 +88,7 @@ public sealed class AuthController(IAuthService authService, IWebHostEnvironment
         {
             response.AccessToken,
             response.AccessTokenExpiresAt,
+            response.RefreshToken,
             response.User
         },
         "Token refreshed successfully."));
@@ -93,9 +96,15 @@ public sealed class AuthController(IAuthService authService, IWebHostEnvironment
 
     [HttpPost("logout")]
     [Authorize]
-    public async Task<ActionResult<ApiResponse<object>>> Logout(CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<object>>> Logout([FromBody] LogoutRequest? body, CancellationToken cancellationToken)
     {
-        var refreshToken = Request.Cookies["refreshToken"];
+        // Body-first (Capacitor/mobile), cookie fallback (browser)
+        var refreshToken = body?.RefreshToken;
+
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            refreshToken = Request.Cookies["refreshToken"];
+        }
 
         if (!string.IsNullOrWhiteSpace(refreshToken))
         {
