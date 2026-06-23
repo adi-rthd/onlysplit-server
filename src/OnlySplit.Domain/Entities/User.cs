@@ -17,6 +17,10 @@ public class User
     public string? NotificationPreferencesJson { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
 
+    // Password reset
+    public string? PasswordResetTokenHash { get; set; }
+    public DateTime? PasswordResetExpiresAt { get; set; }
+
     public ICollection<Group> CreatedGroups { get; set; } = new List<Group>();
     public ICollection<GroupMember> GroupMemberships { get; set; } = new List<GroupMember>();
     public ICollection<Expense> PaidExpenses { get; set; } = new List<Expense>();

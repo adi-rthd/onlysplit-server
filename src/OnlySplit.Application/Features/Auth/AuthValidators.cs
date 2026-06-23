@@ -44,3 +44,23 @@ public sealed class LogoutRequestValidator : AbstractValidator<LogoutRequest>
         RuleFor(request => request.RefreshToken).NotEmpty();
     }
 }
+
+public sealed class ForgotPasswordRequestValidator : AbstractValidator<ForgotPasswordRequest>
+{
+    public ForgotPasswordRequestValidator()
+    {
+        RuleFor(request => request.Email).NotEmpty().EmailAddress().MaximumLength(255);
+    }
+}
+
+public sealed class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequest>
+{
+    public ResetPasswordRequestValidator()
+    {
+        RuleFor(request => request.Token).NotEmpty();
+        RuleFor(request => request.NewPassword)
+            .NotEmpty()
+            .MinimumLength(6)
+            .MaximumLength(128);
+    }
+}

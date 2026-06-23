@@ -392,4 +392,44 @@ public sealed class AuthService(
 
         await context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var email = NormalizeEmail(request.Email);
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+
+        // Always return without error to prevent email enumeration
+        if (user is null) return;
+
+        var rawToken = tokenService.GenerateRefreshToken();
+        user.PasswordResetTokenHash = tokenService.HashRefreshToken(rawToken);
+        user.PasswordResetExpiresAt = DateTime.UtcNow.AddHours(1);
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        // TODO: Send email with reset link:
+        // https://onlysplit.com/reset-password?token={Uri.EscapeDataString(rawToken)}&email={Uri.EscapeDataString(email)}
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Token))
+            throw new UnauthorizedAccessException("Reset token is required.");
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 6)
+            throw new AppException("Password must be at least 6 characters.");
+
+        var tokenHash = tokenService.HashRefreshToken(request.Token);
+
+        var user = await context.Users.FirstOrDefaultAsync(
+            u => u.PasswordResetTokenHash == tokenHash && u.PasswordResetExpiresAt > DateTime.UtcNow,
+            cancellationToken
+        ) ?? throw new UnauthorizedAccessException("Invalid or expired reset token.");
+
+        user.PasswordHash = PasswordHasher.Hash(request.NewPassword);
+        user.PasswordResetTokenHash = null;
+        user.PasswordResetExpiresAt = null;
+
+        await context.SaveChangesAsync(cancellationToken);
+    }
 }

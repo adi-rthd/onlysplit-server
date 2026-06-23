@@ -140,4 +140,20 @@ public sealed class AuthController(IAuthService authService, IWebHostEnvironment
         await authService.ChangePasswordAsync(request, cancellationToken);
         return Ok(ApiResponse<object>.Ok(null, "Password changed successfully."));
     }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<object>>> ForgotPassword(ForgotPasswordRequest request, CancellationToken cancellationToken)
+    {
+        await authService.ForgotPasswordAsync(request, cancellationToken);
+        return Ok(ApiResponse<object>.Ok(null, "If that email exists, a reset link has been sent."));
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<object>>> ResetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
+    {
+        await authService.ResetPasswordAsync(request, cancellationToken);
+        return Ok(ApiResponse<object>.Ok(null, "Password reset successfully."));
+    }
 }
