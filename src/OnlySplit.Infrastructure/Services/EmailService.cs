@@ -41,8 +41,7 @@ public sealed class EmailService : IEmailService
         await client.ConnectAsync(
             _settings.Host,
             _settings.Port,
-            SecureSocketOptions.None,
-            cancellationToken);
+            SecureSocketOptions.None);
 
         // NO AUTHENTICATION REQUIRED
 
