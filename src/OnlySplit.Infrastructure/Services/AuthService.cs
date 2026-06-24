@@ -164,7 +164,158 @@ public sealed class AuthService(
             new { user.Id, user.Email },
             cancellationToken
         );
+        var html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <title>Welcome to OnlySplit</title>
+        </head>
 
+        <body style="margin:0;padding:40px 20px;background:#090B17;font-family:Inter,Segoe UI,sans-serif;">
+
+        <div style="
+        max-width:560px;
+        margin:0 auto;
+        background:#111423;
+        border:1px solid #1F2437;
+        border-radius:20px;
+        padding:48px;">
+
+        <!-- Brand -->
+
+        <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:40px;">
+        <tr>
+        <td valign="middle">
+        <img
+        src="https://onlysplit.com/logo.png"
+        alt="OnlySplit"
+        height="42"
+        style="display:block;" />
+        </td>
+
+        <td width="14"></td>
+
+        <td valign="middle">
+        <div style="
+        color:#FFFFFF;
+        font-size:28px;
+        font-weight:700;
+        line-height:1;">
+        OnlySplit
+        </div>
+
+        <div style="
+        color:#6B7280;
+        font-size:11px;
+        letter-spacing:3px;
+        text-transform:uppercase;
+        margin-top:4px;">
+        Expense Platform
+        </div>
+        </td>
+        </tr>
+        </table>
+
+        <!-- Content -->
+
+        <h1 style="
+        margin:0;
+        font-size:38px;
+        font-weight:700;
+        line-height:1.2;
+        color:#FFFFFF;">
+        Welcome to OnlySplit 👋
+        </h1>
+
+        <p style="
+        margin:20px 0 36px;
+        color:#9CA3AF;
+        font-size:16px;
+        line-height:1.8;">
+        Hi <strong style="color:#FFFFFF;">{FIRST_NAME}</strong>,
+        <br><br>
+        Your account has been created successfully.
+        You're now ready to split expenses, track balances, and settle up with friends effortlessly.
+        </p>
+
+        <a href="https://onlysplit.com"
+        style="
+        display:inline-block;
+        background:#6D4AFF;
+        color:#FFFFFF;
+        text-decoration:none;
+        padding:14px 24px;
+        border-radius:12px;
+        font-weight:600;">
+        Open OnlySplit → </a>
+
+        <div style="
+        margin:40px 0;
+        height:1px;
+        background:#1F2437;">
+        </div>
+
+        <table width="100%">
+        <tr>
+        <td style="padding-bottom:16px;">
+        <div style="color:#FFFFFF;font-weight:600;">
+        ✓ Create Groups
+        </div>
+        <div style="color:#6B7280;font-size:14px;">
+        Organize expenses with friends, roommates, or trips.
+        </div>
+        </td>
+        </tr>
+
+        <tr>
+        <td style="padding-bottom:16px;">
+        <div style="color:#FFFFFF;font-weight:600;">
+        ✓ Track Balances
+        </div>
+        <div style="color:#6B7280;font-size:14px;">
+        See who owes whom in real time.
+        </div>
+        </td>
+        </tr>
+
+        <tr>
+        <td>
+        <div style="color:#FFFFFF;font-weight:600;">
+        ✓ Settle Easily
+        </div>
+        <div style="color:#6B7280;font-size:14px;">
+        Record settlements and keep everything balanced.
+        </div>
+        </td>
+        </tr>
+        </table>
+
+        <div style="
+        margin-top:40px;
+        padding-top:24px;
+        border-top:1px solid #1F2437;
+        color:#6B7280;
+        font-size:14px;
+        line-height:1.8;">
+        Need help? Just reply to this email and we'll be happy to assist.
+        </div>
+
+        </div>
+
+        <div style="
+        text-align:center;
+        margin-top:20px;
+        color:#475569;
+        font-size:12px;">
+        © OnlySplit · Split expenses with precision
+        </div>
+
+        </body>
+        </html>
+        """;
+        await emailService.SendAsync(email, "Welcome to OnlySplit!", html, cancellationToken);
+        
         return response;
     }
 
