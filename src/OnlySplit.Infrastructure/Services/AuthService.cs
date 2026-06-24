@@ -164,7 +164,7 @@ public sealed class AuthService(
             new { user.Id, user.Email },
             cancellationToken
         );
-        var html = """
+        var html = $"""
         <!DOCTYPE html>
         <html>
         <head>
@@ -233,7 +233,7 @@ public sealed class AuthService(
         color:#9CA3AF;
         font-size:16px;
         line-height:1.8;">
-        Hi <strong style="color:#FFFFFF;">{FIRST_NAME}</strong>,
+        Hi <strong style="color:#FFFFFF;">{request.FirstName.Trim()}</strong>,
         <br><br>
         Your account has been created successfully.
         You're now ready to split expenses, track balances, and settle up with friends effortlessly.
