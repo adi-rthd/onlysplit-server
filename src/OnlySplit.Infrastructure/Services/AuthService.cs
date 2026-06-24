@@ -417,7 +417,7 @@ public sealed class AuthService(
             $"&email={Uri.EscapeDataString(email)}";
 
         var html = $""" 
-       <div style="background:#090B17;padding:40px 20px;font-family:Inter,Segoe UI,sans-serif;">
+        <div style="background:#090B17;padding:40px 20px;font-family:Inter,Segoe UI,sans-serif;">
 
         <div style="
         max-width:560px;
@@ -479,7 +479,7 @@ public sealed class AuthService(
                 If this was you, use the button below to continue.
             </p>
 
-            <a href="{RESET_LINK}" style="
+            <a href="{resetLink}" style="
         display:inline-block;
         background:#6D4AFF;
         color:white;
@@ -518,7 +518,7 @@ public sealed class AuthService(
         </div>
 
     </div>
-        """;
+    """;
 
         await emailService.SendAsync(email, "Reset your OnlySplit password", html, cancellationToken);
     }
