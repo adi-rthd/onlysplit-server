@@ -36,7 +36,8 @@ public sealed class EmailService : IEmailService
         }.ToMessageBody();
 
         using var client = new SmtpClient();
-
+        Console.WriteLine($"SMTP Host = {_settings.Host}");
+        Console.WriteLine($"SMTP Port = {_settings.Port}");
         await client.ConnectAsync(
             _settings.Host,
             _settings.Port,
