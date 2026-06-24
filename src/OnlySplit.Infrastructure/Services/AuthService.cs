@@ -20,6 +20,7 @@ public sealed class AuthService(
     ICurrentUserService currentUser,
     IActivityService activityService,
     ISessionService sessionService,
+    IEmailService emailService,
     IOptions<JwtOptions> jwtOptions) : IAuthService
 {
     private readonly JwtOptions _jwtOptions = jwtOptions.Value;
@@ -41,7 +42,7 @@ public sealed class AuthService(
     public async Task<UserResponse> UpdateProfileAsync(UpdateProfileRequest request, CancellationToken cancellationToken = default)
     {
         var userId = currentUser.UserId;
-        var user = 
+        var user =
         await context.Users.FirstOrDefaultAsync(x => x.Id == userId, cancellationToken)
         ?? throw new NotFoundException("User not found.");
 
@@ -134,10 +135,10 @@ public sealed class AuthService(
     {
         var email = NormalizeEmail(request.Email);
 
-        var exists = 
+        var exists =
         await context.Users.AnyAsync(user => user.Email == email, cancellationToken);
-        
-        if(exists)
+
+        if (exists)
             throw new ConflictException("A user with this email already exists.");
 
         var user = new User
@@ -396,19 +397,42 @@ public sealed class AuthService(
     public async Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
     {
         var email = NormalizeEmail(request.Email);
+
         var user = await context.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
 
-        // Always return without error to prevent email enumeration
-        if (user is null) return;
+        if (user is null)
+            return;
 
         var rawToken = tokenService.GenerateRefreshToken();
+
         user.PasswordResetTokenHash = tokenService.HashRefreshToken(rawToken);
+
         user.PasswordResetExpiresAt = DateTime.UtcNow.AddHours(1);
 
         await context.SaveChangesAsync(cancellationToken);
 
-        // TODO: Send email with reset link:
-        // https://onlysplit.com/reset-password?token={Uri.EscapeDataString(rawToken)}&email={Uri.EscapeDataString(email)}
+        var resetLink =
+            $"https://onlysplit.com/reset-password" +
+            $"?token={Uri.EscapeDataString(rawToken)}" +
+            $"&email={Uri.EscapeDataString(email)}";
+
+        var html = $"""
+        <h2>Reset Your OnlySplit Password</h2>
+
+        <p>You requested a password reset.</p>
+
+        <p>
+            <a href="{resetLink}">
+                Reset Password
+            </a>
+        </p>
+
+        <p>This link expires in 1 hour.</p>
+
+        <p>If you didn't request this, you can safely ignore this email.</p>
+        """;
+
+        await emailService.SendAsync(email, "Reset your OnlySplit password", html, cancellationToken);
     }
 
     public async Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)

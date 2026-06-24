@@ -9,6 +9,7 @@ using OnlySplit.Application.Activities.Services;
 using OnlySplit.Application.Analytics.Interfaces;
 using OnlySplit.Application.Dashboard.Interfaces;
 using OnlySplit.Application.Dashboard.Services;
+using OnlySplit.Application.Features.Mail;
 using OnlySplit.Application.Features.Redis;
 using OnlySplit.Application.Interfaces;
 using OnlySplit.Infrastructure.Auth;
@@ -118,7 +119,7 @@ public static class DependencyInjection
         });
 
         services.Configure<FileStorageOptions>(configuration.GetSection(FileStorageOptions.SectionName));
-
+        services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<ITokenService, TokenService>();
@@ -141,6 +142,7 @@ public static class DependencyInjection
         services.AddScoped<ISessionService, RedisSessionService>();
         services.AddScoped<IAnalyticsService,AnalyticsService>();
         services.AddScoped<IFileUploadService, FileUploadService>();
+        services.AddScoped<IEmailService, EmailService>();
         return services;
     }
 
