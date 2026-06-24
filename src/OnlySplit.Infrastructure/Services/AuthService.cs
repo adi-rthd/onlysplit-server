@@ -417,134 +417,107 @@ public sealed class AuthService(
             $"&email={Uri.EscapeDataString(email)}";
 
         var html = $""" 
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta charset="UTF-8">
-        <title>Reset Your OnlySplit Password</title>
-        </head>
-
-        <body style="
-        margin:0;
-        padding:0;
-        background:#050816;
-        font-family:Inter,Segoe UI,sans-serif;
-        ">
-
-        <table width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-        <td align="center" style="padding:40px 20px;">
-
-        <table width="620" cellpadding="0" cellspacing="0"
-        style="
-        background:#0b1020;
-        border:1px solid rgba(255,255,255,0.08);
-        border-radius:24px;
-        overflow:hidden;
-        ">
-
-        <tr>
-        <td style="
-        padding:50px;
-        text-align:center;
-        ">
-
-        <img
-        src="https://onlysplit.com/logo.png"
-        alt="OnlySplit"
-        width="180"
-        style="margin-bottom:40px;" />
+       <div style="background:#090B17;padding:40px 20px;font-family:Inter,Segoe UI,sans-serif;">
 
         <div style="
+        max-width:560px;
+        margin:0 auto;
+        background:#111423;
+        border:1px solid #1F2437;
+        border-radius:20px;
+        padding:48px;
+    ">
+
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:40px;">
+                <tr>
+                    <td valign="middle">
+                        <img src="https://onlysplit.com/logo.png" alt="OnlySplit" height="42" style="display:block;" />
+                    </td>
+
+                    <td width="14"></td>
+
+                    <td valign="middle">
+                        <div style="
+            color:#ffffff;
+            font-size:28px;
+            font-weight:700;
+            line-height:1;
+        ">
+                            OnlySplit
+                        </div>
+
+                        <div style="
+            color:#6B7280;
+            font-size:11px;
+            letter-spacing:3px;
+            text-transform:uppercase;
+            margin-top:4px;
+        ">
+                            Expense Platform
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <h1 style="
+    margin:0;
+    color:#FFFFFF;
+    font-size:40px;
+    line-height:1.1;
+    font-weight:700;
+    ">
+                Reset your password
+            </h1>
+
+            <p style="
+    margin:20px 0 36px;
+    color:#9CA3AF;
+    font-size:16px;
+    line-height:1.7;
+    ">
+                We received a request to reset your OnlySplit password.
+                If this was you, use the button below to continue.
+            </p>
+
+            <a href="{RESET_LINK}" style="
         display:inline-block;
-        padding:10px 18px;
-        border:1px solid rgba(255,255,255,0.08);
-        border-radius:999px;
-        color:#8b5cf6;
-        font-size:12px;
-        letter-spacing:2px;
-        text-transform:uppercase;
-        margin-bottom:24px;">
-        Account Security
-        </div>
-
-        <h1 style="
-        margin:0;
-        font-size:52px;
-        font-weight:800;
-        line-height:1.05;
-        color:#ffffff;">
-        Reset your
-        <span style="
-        background:linear-gradient(90deg,#7c3aed,#60a5fa);
-        -webkit-background-clip:text;
-        -webkit-text-fill-color:transparent;">
-        password
-        </span>
-        </h1>
-
-        <p style="
-        margin:28px auto;
-        max-width:460px;
-        font-size:18px;
-        line-height:1.8;
-        color:#94a3b8;">
-        A request was made to reset your OnlySplit account password.
-        If this was you, continue below.
-        </p>
-
-        <a href="{resetLink}"
-        style="
-        display:inline-block;
-        padding:18px 36px;
-        border-radius:14px;
-        background:linear-gradient(90deg,#6d4aff,#5b8cff);
+        background:#6D4AFF;
         color:white;
         text-decoration:none;
-        font-size:18px;
-        font-weight:700;">
-        Reset Password → </a>
+        padding:14px 24px;
+        border-radius:12px;
+        font-weight:600;
+    ">
+                Reset Password
+            </a>
 
-        <p style="
-        margin-top:32px;
-        font-size:14px;
-        color:#64748b;">
-        This secure link expires in 1 hour.
-        </p>
+            <p style="
+    margin-top:36px;
+    color:#6B7280;
+    font-size:14px;
+    ">
+                This link expires in 1 hour.
+            </p>
 
-        <hr style="
-        border:none;
-        height:1px;
-        background:rgba(255,255,255,0.08);
-        margin:40px 0;" />
+            <div style="
+    margin:36px 0;
+    height:1px;
+    background:#1F2437;
+    "></div>
 
-        <p style="
-        font-size:14px;
-        line-height:1.8;
-        color:#64748b;">
-        If you didn't request a password reset,
-        you can safely ignore this email.
-        No changes will be made to your account.
-        </p>
+            <p style="
+    color:#6B7280;
+    font-size:14px;
+    line-height:1.7;
+    margin:0;
+    ">
+                If you didn't request a password reset, you can safely ignore this email.
+            </p>
+            ```
 
-        </td>
-        </tr>
-        </table>
+        </div>
 
-        <p style="
-        margin-top:20px;
-        color:#475569;
-        font-size:12px;">
-        © OnlySplit · Split expenses with precision
-        </p>
-
-        </td>
-        </tr>
-        </table>
-
-        </body>
-        </html>
-
+    </div>
         """;
 
         await emailService.SendAsync(email, "Reset your OnlySplit password", html, cancellationToken);
