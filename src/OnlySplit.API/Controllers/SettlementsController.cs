@@ -38,4 +38,12 @@ public sealed class SettlementsController(ISettlementService settlementService) 
         var response = await settlementService.GetAllPendingSettlementsAsync(cancellationToken);
         return Ok(ApiResponse<IReadOnlyCollection<SettlementResponse>>.Ok(response));
     }
+    [HttpGet("summary")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<SettlementOverviewResponse>>>> GetSummary(
+    CancellationToken cancellationToken)
+    {
+        var response = await settlementService.GetSettlementSummaryAsync(cancellationToken);
+
+        return Ok(ApiResponse<IReadOnlyCollection<SettlementOverviewResponse>>.Ok(response));
+    }
 }

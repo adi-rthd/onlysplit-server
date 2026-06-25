@@ -9,4 +9,5 @@ public interface ISettlementService
     Task<IReadOnlyCollection<SettlementResponse>> GetPendingSettlementsAsync(Guid groupId, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<Settlement>> RegenerateForGroupAsync(Guid groupId, CancellationToken cancellationToken = default);
     Task<IReadOnlyCollection<SettlementResponse>> GetAllPendingSettlementsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<SettlementOverviewResponse>> GetSettlementSummaryAsync(CancellationToken cancellationToken = default);
 }
