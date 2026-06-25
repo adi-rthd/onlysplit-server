@@ -197,7 +197,46 @@ public sealed class SettlementService(
 
         return settlements;
     }
+    public async Task<IReadOnlyCollection<SettlementResponse>> GetAllPendingSettlementsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var settlements = await context.Settlements
+            .AsNoTracking()
+            .Include(s => s.Payer)
+            .Include(s => s.Receiver)
+            .Include(s => s.Group)
+            .Where(s =>
+                s.Status == SettlementStatuses.Pending &&
+                s.Group!.Members.Any(m => m.UserId == currentUser.UserId))
+            .OrderBy(s => s.CreatedAt)
+            .ToListAsync(cancellationToken);
 
+        var merged = settlements
+            .GroupBy(s => new
+            {
+                s.PayerId,
+                s.ReceiverId
+            })
+            .Select(g =>
+            {
+                var first = g.First();
+
+                return new SettlementResponse(
+                    Guid.Empty,
+                    Guid.Empty,
+                    first.PayerId,
+                    $"{first.Payer!.FirstName} {first.Payer.LastName}".Trim(),
+                    first.ReceiverId,
+                    $"{first.Receiver!.FirstName} {first.Receiver.LastName}".Trim(),
+                    g.Sum(x => x.Amount),
+                    SettlementStatuses.Pending,
+                    g.Min(x => x.CreatedAt));
+            })
+            .OrderByDescending(x => x.Amount)
+            .ToArray();
+
+        return merged;
+    }
     private static SettlementResponse ToResponse(Settlement settlement) =>
         new(
             settlement.Id,
