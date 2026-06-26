@@ -29,13 +29,13 @@ public sealed class LoginRequestValidator : AbstractValidator<LoginRequest>
     }
 }
 
-public sealed class RefreshTokenRequestValidator : AbstractValidator<RefreshTokenRequest>
-{
-    public RefreshTokenRequestValidator()
-    {
-        RuleFor(request => request.RefreshToken).NotEmpty();
-    }
-}
+// public sealed class RefreshTokenRequestValidator : AbstractValidator<RefreshTokenRequest>
+// {
+//     public RefreshTokenRequestValidator()
+//     {
+//         // RuleFor(request => request.RefreshToken).NotEmpty();
+//     }
+// }
 
 public sealed class LogoutRequestValidator : AbstractValidator<LogoutRequest>
 {
