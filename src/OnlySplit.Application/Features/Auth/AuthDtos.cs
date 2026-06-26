@@ -18,7 +18,7 @@ public sealed class UpdateProfileRequest
 
 public sealed record LoginRequest(string Email, string Password);
 
-public sealed record RefreshTokenRequest(string RefreshToken);
+public sealed record RefreshTokenRequest(string? RefreshToken);
 
 public sealed record LogoutRequest(string RefreshToken);
 

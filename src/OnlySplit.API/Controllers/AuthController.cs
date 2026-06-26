@@ -35,7 +35,7 @@ public sealed class AuthController(IAuthService authService, IWebHostEnvironment
             response.User
         }, "Signup completed successfully."));
     }
-    
+
     [HttpPut("profile")]
     [Authorize]
     public async Task<ActionResult<ApiResponse<UserResponse>>> UpdateProfile(UpdateProfileRequest request, CancellationToken cancellationToken)
@@ -77,12 +77,12 @@ public sealed class AuthController(IAuthService authService, IWebHostEnvironment
 
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
-            throw new UnauthorizedAccessException(
-                "Refresh token missing."
-            );
+            throw new UnauthorizedAccessException("Refresh token missing.");
         }
+        refreshToken = Uri.UnescapeDataString(refreshToken);
 
         var response = await authService.RefreshAsync(new RefreshTokenRequest(refreshToken), IpAddress, cancellationToken);
+
         Response.Cookies.Append("refreshToken", response.RefreshToken, RefreshCookieOptions);
         return Ok(ApiResponse<object>.Ok(new
         {
@@ -90,8 +90,7 @@ public sealed class AuthController(IAuthService authService, IWebHostEnvironment
             response.AccessTokenExpiresAt,
             response.RefreshToken,
             response.User
-        },
-        "Token refreshed successfully."));
+        }, "Token refreshed successfully."));
     }
 
     [HttpPost("logout")]

@@ -349,10 +349,7 @@ public sealed class AuthService(
         return response;
     }
 
-    public async Task<AuthResponse> RefreshAsync(
-        RefreshTokenRequest request,
-        string? ipAddress,
-        CancellationToken cancellationToken = default)
+    public async Task<AuthResponse> RefreshAsync(RefreshTokenRequest request, string? ipAddress, CancellationToken cancellationToken = default)
     {
         var parts = request.RefreshToken.Split('.');
 
@@ -413,19 +410,14 @@ public sealed class AuthService(
         }
 
         var newSecret = tokenService.GenerateRefreshToken();
-
         var newRefreshToken = $"{sessionId}.{newSecret}";
 
-        session.RefreshTokenHash = tokenService
-            .HashRefreshToken(newSecret);
-
-        session.ExpiresAtUtc = DateTime.UtcNow
-            .AddDays(_jwtOptions.RefreshTokenDays);
-
+        session.RefreshTokenHash = tokenService.HashRefreshToken(newSecret);
+        session.ExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtOptions.RefreshTokenDays);
+        
         await sessionService.CreateSessionAsync(session);
 
-        var (accessToken, expiresAt) = tokenService
-            .GenerateAccessToken(user);
+        var (accessToken, expiresAt) = tokenService.GenerateAccessToken(user);
 
         return new AuthResponse(
             accessToken,

@@ -237,8 +237,7 @@ public sealed class SettlementService(
 
         return merged;
     }
-    public async Task<IReadOnlyCollection<SettlementOverviewResponse>> GetSettlementSummaryAsync(
-    CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<SettlementOverviewResponse>> GetSettlementSummaryAsync(CancellationToken cancellationToken = default)
     {
         var settlements = await context.Settlements
             .AsNoTracking()

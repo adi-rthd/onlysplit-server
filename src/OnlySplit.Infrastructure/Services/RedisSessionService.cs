@@ -27,7 +27,11 @@ public class RedisSessionService : ISessionService
         var json = JsonSerializer.Serialize(session);
 
         var expiry = session.ExpiresAtUtc - DateTime.UtcNow;
-
+        if (expiry.TotalMilliseconds <= 0)
+        {
+            await _database.KeyDeleteAsync(key);
+            return;
+        }
         await _database.StringSetAsync(
             key,
             json,
