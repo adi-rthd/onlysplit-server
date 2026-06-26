@@ -237,7 +237,38 @@ public sealed class SettlementService(
 
         return merged;
     }
-    public async Task<IReadOnlyCollection<SettlementOverviewResponse>> GetSettlementSummaryAsync(CancellationToken cancellationToken = default)
+    // public async Task<IReadOnlyCollection<SettlementOverviewResponse>> GetSettlementSummaryAsync(CancellationToken cancellationToken = default)
+    // {
+    //     var settlements = await context.Settlements
+    //         .AsNoTracking()
+    //         .Include(s => s.Payer)
+    //         .Include(s => s.Receiver)
+    //         .Where(s =>
+    //             s.Status == SettlementStatuses.Pending &&
+    //             context.GroupMembers.Any(gm =>
+    //                 gm.GroupId == s.GroupId &&
+    //                 gm.UserId == currentUser.UserId))
+    //         .ToListAsync(cancellationToken);
+
+    //     return settlements
+    //         .GroupBy(s => new
+    //         {
+    //             s.PayerId,
+    //             s.ReceiverId,
+    //             PayerName = $"{s.Payer!.FirstName} {s.Payer.LastName}".Trim(),
+    //             ReceiverName = $"{s.Receiver!.FirstName} {s.Receiver.LastName}".Trim()
+    //         })
+    //         .Select(g => new SettlementOverviewResponse(
+    //             g.Key.PayerId,
+    //             g.Key.PayerName,
+    //             g.Key.ReceiverId,
+    //             g.Key.ReceiverName,
+    //             g.Sum(x => x.Amount)
+    //         ))
+    //         .OrderByDescending(x => x.Amount)
+    //         .ToArray();
+    // }
+    public async Task<IReadOnlyCollection<SettlementResponse>> GetSettlementSummaryAsync(CancellationToken cancellationToken = default)
     {
         var settlements = await context.Settlements
             .AsNoTracking()
@@ -248,25 +279,12 @@ public sealed class SettlementService(
                 context.GroupMembers.Any(gm =>
                     gm.GroupId == s.GroupId &&
                     gm.UserId == currentUser.UserId))
+            .OrderByDescending(s => s.Amount)
             .ToListAsync(cancellationToken);
 
-        return settlements
-            .GroupBy(s => new
-            {
-                s.PayerId,
-                s.ReceiverId,
-                PayerName = $"{s.Payer!.FirstName} {s.Payer.LastName}".Trim(),
-                ReceiverName = $"{s.Receiver!.FirstName} {s.Receiver.LastName}".Trim()
-            })
-            .Select(g => new SettlementOverviewResponse(
-                g.Key.PayerId,
-                g.Key.PayerName,
-                g.Key.ReceiverId,
-                g.Key.ReceiverName,
-                g.Sum(x => x.Amount)
-            ))
-            .OrderByDescending(x => x.Amount)
-            .ToArray();
+        // Instead of GroupBy, we just map each individual row to a response.
+        // This preserves the unique 'Id' so Razorpay knows exactly what is being paid!
+        return settlements.Select(ToResponse).ToArray();
     }
     private static SettlementResponse ToResponse(Settlement settlement) =>
         new(
