@@ -6,7 +6,7 @@ public sealed class CreateOrderRequestValidator : AbstractValidator<CreateOrderR
 {
     public CreateOrderRequestValidator()
     {
-        RuleFor(request => request.SettlementId).NotEmpty();
+        RuleFor(request => request.SettlementIds).NotEmpty();
     }
 }
 

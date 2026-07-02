@@ -10,6 +10,8 @@ public sealed class SettlementPaymentConfiguration : IEntityTypeConfiguration<Se
     {
         builder.ToTable("settlement_payments");
         builder.HasKey(sp => sp.Id);
+
+        builder.Property(sp => sp.RowVersion).IsRowVersion();
         builder.Property(sp => sp.Amount).HasPrecision(18, 2);
         builder.Property(sp => sp.Status).HasMaxLength(40);
         builder.Property(sp => sp.Method).HasMaxLength(30);

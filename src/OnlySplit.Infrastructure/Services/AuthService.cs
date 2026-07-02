@@ -371,7 +371,14 @@ public sealed class AuthService(
 
         var session = await sessionService.GetSessionAsync(sessionId);
 
-        if (session is null || session.Revoked)
+        if (session is null)
+        {
+            throw new UnauthorizedAccessException(
+                "Refresh token is invalid or expired."
+            );
+        }
+
+        if (session.Revoked)
         {
             throw new UnauthorizedAccessException(
                 "Refresh token is invalid or expired."

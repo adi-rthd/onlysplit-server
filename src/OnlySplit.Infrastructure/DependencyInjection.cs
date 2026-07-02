@@ -143,6 +143,7 @@ public static class DependencyInjection
         services.AddScoped<IAnalyticsService,AnalyticsService>();
         services.AddScoped<IFileUploadService, FileUploadService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<ISettlementAuditService, SettlementAuditService>();
         return services;
     }
 

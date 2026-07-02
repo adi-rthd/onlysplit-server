@@ -44,8 +44,7 @@ public sealed class GroupInvitationController(
     }
     [HttpGet("{id:guid}/invited")]
     public async Task<ActionResult<
-        ApiResponse<IReadOnlyCollection<GetGroupInvitationResponse>>>>
-        invited(Guid id, CancellationToken cancellationToken)
+        ApiResponse<IReadOnlyCollection<GetGroupInvitationResponse>>>>invited(Guid id, CancellationToken cancellationToken)
     {
         var response = await invitationService.GetGroupInvitationsAsync(id, cancellationToken);
 

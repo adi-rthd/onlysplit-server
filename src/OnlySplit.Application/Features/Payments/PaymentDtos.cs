@@ -1,7 +1,10 @@
 namespace OnlySplit.Application.Features.Payments;
 
-public sealed record CreateOrderRequest(Guid SettlementId);
-
+public class CreateOrderRequest
+{
+    // Change this from 'Guid SettlementId' to:
+    public List<Guid> SettlementIds { get; set; } = new();
+}
 public sealed record CreateOrderResponse(
     Guid PaymentId,
     Guid SettlementId,

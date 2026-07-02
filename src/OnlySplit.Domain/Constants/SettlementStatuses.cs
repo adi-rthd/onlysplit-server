@@ -1,5 +1,10 @@
 namespace OnlySplit.Domain.Constants;
 
+// Status terminology mapping (requirements → database values):
+// Pending       → "pending"
+// PartiallyPaid → "partially_settled"
+// Completed     → "settled"
+// Cancelled     → "cancelled"
 public static class SettlementStatuses
 {
     public const string Pending = "pending";

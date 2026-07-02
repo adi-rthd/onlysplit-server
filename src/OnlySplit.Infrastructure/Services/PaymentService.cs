@@ -15,38 +15,35 @@ public sealed class PaymentService(
     IRazorpayService razorpayService,
     IPaymentVerificationService paymentVerificationService,
     IActivityService activityService,
-    IRealtimeNotifier realtimeNotifier) : IPaymentService
+    IRealtimeNotifier realtimeNotifier,
+    ISettlementService settlementService) : IPaymentService
 {
     public async Task<CreateOrderResponse> CreateOrderAsync(
         CreateOrderRequest request,
         CancellationToken cancellationToken = default)
     {
+        var settlementId = request.SettlementIds.First();
+
         var settlement = await context.Settlements
             .Include(candidate => candidate.Payer)
             .Include(candidate => candidate.Receiver)
             .FirstOrDefaultAsync(
-                candidate => candidate.Id == request.SettlementId,
+                candidate => candidate.Id == settlementId,
                 cancellationToken)
             ?? throw new NotFoundException(
                 "Settlement was not found.");
 
         if (settlement.PayerId != currentUser.UserId)
         {
-            throw new ForbiddenException(
-                "Only the settlement payer can create this payment order.");
+            throw new ForbiddenException("Only the settlement payer can create this payment order.");
         }
 
         if (settlement.Status != SettlementStatuses.Pending)
         {
-            throw new ConflictException(
-                "Only pending settlements can be paid.");
+            throw new ConflictException("Only pending settlements can be paid.");
         }
 
-        var razorpayOrder =
-            await razorpayService.CreateOrderAsync(
-                settlement.Id,
-                settlement.Amount,
-                cancellationToken);
+        var razorpayOrder = await razorpayService.CreateOrderAsync(settlement.Id, settlement.Amount, cancellationToken);
 
         var payment = new Payment
         {
@@ -57,20 +54,15 @@ public sealed class PaymentService(
 
         context.Payments.Add(payment);
 
-        await context.SaveChangesAsync(
-            cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
 
-        await activityService.LogAsync(
-            currentUser.UserId,
-            ActivityTypes.PaymentCreated,
-            new
-            {
-                payment.Id,
-                payment.SettlementId,
-                payment.Amount,
-                payment.RazorpayOrderId
-            },
-            cancellationToken);
+        await activityService.LogAsync(currentUser.UserId, ActivityTypes.PaymentCreated, new
+        {
+            payment.Id,
+            payment.SettlementId,
+            payment.Amount,
+            payment.RazorpayOrderId
+        }, cancellationToken);
 
         return new CreateOrderResponse(
             payment.Id,
@@ -97,26 +89,29 @@ public sealed class PaymentService(
             throw new ForbiddenException("Only the settlement payer can verify this payment.");
         }
 
-        if (payment.Status == PaymentStatuses.Completed && settlement.Status == SettlementStatuses.Settled)
+        // Idempotency: if already completed, return success
+        if (payment.Status == PaymentStatuses.Completed)
         {
             await transaction.CommitAsync(cancellationToken);
             return;
         }
 
-        if (settlement.Status != SettlementStatuses.Pending)
+        if (settlement.Status is SettlementStatuses.Settled or SettlementStatuses.Cancelled)
         {
             throw new ConflictException("Settlement is no longer payable.");
         }
 
+        // Update the gateway Payment record
         payment.RazorpayPaymentId = request.RazorpayPaymentId;
         payment.RazorpaySignature = request.RazorpaySignature;
         payment.Status = PaymentStatuses.Completed;
-        settlement.Status = SettlementStatuses.Settled;
+        await context.SaveChangesAsync(cancellationToken); // Save Payment status
 
-        await context.SaveChangesAsync(cancellationToken);
+        // Delegate settlement lifecycle to shared pipeline
+        await settlementService.CreateSettlementPaymentForRazorpayAsync(
+            settlement.Id, payment.Amount, request.RazorpayPaymentId, cancellationToken);
+
         await transaction.CommitAsync(cancellationToken);
-
-        await NotifyPaymentCompletedAsync(payment.Id, cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<PaymentHistoryResponse>> GetHistoryAsync(CancellationToken cancellationToken = default)
@@ -171,28 +166,39 @@ public sealed class PaymentService(
         if (eventName == "payment.captured")
         {
             payment.RazorpayPaymentId ??= paymentId;
+
+            // Idempotency: skip if already completed
+            if (payment.Status == PaymentStatuses.Completed)
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return;
+            }
+
             payment.Status = PaymentStatuses.Completed;
-            payment.Settlement.Status = SettlementStatuses.Settled;
+            await context.SaveChangesAsync(cancellationToken); // Save Payment status first
+
+            // Delegate settlement lifecycle to shared pipeline (handles its own SaveChanges)
+            await settlementService.CreateSettlementPaymentForRazorpayAsync(
+                payment.Settlement.Id, payment.Amount, payment.RazorpayPaymentId!, cancellationToken);
         }
         else if (eventName == "payment.failed")
         {
             payment.RazorpayPaymentId ??= paymentId;
             payment.Status = PaymentStatuses.Failed;
+            await context.SaveChangesAsync(cancellationToken);
         }
         else if (eventName is "refund.created" or "refund.processed")
         {
             payment.Status = PaymentStatuses.Refunded;
+            // TODO: Implement refund pipeline to reverse SettlementPayment and recalculate via shared pipeline
             payment.Settlement.Status = SettlementStatuses.Pending;
+            await context.SaveChangesAsync(cancellationToken);
         }
 
-        await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        if (payment.Status == PaymentStatuses.Completed)
-        {
-            await NotifyPaymentCompletedAsync(payment.Id, cancellationToken);
-        }
-        else if (payment.Status == PaymentStatuses.Failed)
+        // Post-commit notifications (best-effort) — captured events handled by shared pipeline
+        if (payment.Status == PaymentStatuses.Failed)
         {
             await NotifyPaymentStatusAsync(payment.Id, "PaymentFailed", ActivityTypes.PaymentFailed, cancellationToken);
         }

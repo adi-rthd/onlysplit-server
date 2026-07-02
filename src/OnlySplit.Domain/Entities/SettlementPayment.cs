@@ -21,6 +21,11 @@ public class SettlementPayment
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; }
 
+    /// <summary>
+    /// Concurrency token to prevent race conditions during confirm/reject operations.
+    /// </summary>
+    public uint RowVersion { get; set; }
+
     // Navigation
     public Settlement Settlement { get; set; } = null!;
     public User FromUser { get; set; } = null!;

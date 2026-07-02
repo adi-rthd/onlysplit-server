@@ -44,4 +44,72 @@ public sealed class SettlementsController(ISettlementService settlementService) 
         var response = await settlementService.GetSettlementSummaryAsync(cancellationToken);
         return Ok(ApiResponse<IReadOnlyCollection<SettlementResponse>>.Ok(response));
     }
+
+    /// <summary>
+    /// Records a manual payment against a settlement.
+    /// </summary>
+    [HttpPost("{settlementId:guid}/payments")]
+    public async Task<ActionResult<ApiResponse<SettlementPaymentResponse>>> RecordPayment(
+        Guid settlementId, RecordManualPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var response = await settlementService.RecordManualPaymentAsync(settlementId, request, cancellationToken);
+        return Ok(ApiResponse<SettlementPaymentResponse>.Ok(response, "Payment recorded successfully."));
+    }
+
+    /// <summary>
+    /// Returns the payment history for a settlement.
+    /// </summary>
+    [HttpGet("{settlementId:guid}/payments")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<SettlementPaymentHistoryItem>>>> GetPaymentHistory(
+        Guid settlementId, CancellationToken cancellationToken)
+    {
+        var response = await settlementService.GetPaymentHistoryAsync(settlementId, cancellationToken);
+        return Ok(ApiResponse<IReadOnlyCollection<SettlementPaymentHistoryItem>>.Ok(response));
+    }
+
+    /// <summary>
+    /// Confirms a pending settlement payment (receiver only).
+    /// </summary>
+    [HttpPost("payments/{paymentId:guid}/confirm")]
+    public async Task<ActionResult<ApiResponse<SettlementPaymentResponse>>> ConfirmPayment(
+        Guid paymentId, CancellationToken cancellationToken)
+    {
+        var response = await settlementService.ConfirmPaymentAsync(paymentId, cancellationToken);
+        return Ok(ApiResponse<SettlementPaymentResponse>.Ok(response, "Payment confirmed successfully."));
+    }
+
+    /// <summary>
+    /// Rejects a pending settlement payment (receiver only).
+    /// </summary>
+    [HttpPost("payments/{paymentId:guid}/reject")]
+    public async Task<ActionResult<ApiResponse<SettlementPaymentResponse>>> RejectPayment(
+        Guid paymentId, RejectPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var response = await settlementService.RejectPaymentAsync(paymentId, request, cancellationToken);
+        return Ok(ApiResponse<SettlementPaymentResponse>.Ok(response, "Payment rejected."));
+    }
+
+    /// <summary>
+    /// Cancels a pending settlement payment (payer only).
+    /// </summary>
+    [HttpPost("payments/{paymentId:guid}/cancel")]
+    public async Task<ActionResult<ApiResponse<SettlementPaymentResponse>>> CancelPayment(
+        Guid paymentId, CancellationToken cancellationToken)
+    {
+        var response = await settlementService.CancelPaymentAsync(paymentId, cancellationToken);
+        return Ok(ApiResponse<SettlementPaymentResponse>.Ok(response, "Payment cancelled."));
+    }
+
+    /// <summary>
+    /// Uploads proof of payment for a pending settlement payment (payer only).
+    /// </summary>
+    [HttpPost("payments/{paymentId:guid}/proof")]
+    public async Task<ActionResult<ApiResponse<ProofUploadResponse>>> UploadProof(
+        Guid paymentId, IFormFile file, CancellationToken cancellationToken)
+    {
+        await using var stream = file.OpenReadStream();
+        var response = await settlementService.UploadProofAsync(
+            paymentId, stream, file.FileName, file.ContentType, file.Length, cancellationToken);
+        return Ok(ApiResponse<ProofUploadResponse>.Ok(response, "Proof uploaded successfully."));
+    }
 }
