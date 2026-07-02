@@ -733,9 +733,38 @@ public sealed class SettlementService(
 
     private async Task RecalculateSettlementInternalAsync(Settlement settlement, CancellationToken ct)
     {
-        var paidAmount = await context.SettlementPayments
-            .Where(sp => sp.SettlementId == settlement.Id && sp.Status == SettlementPaymentStatuses.Confirmed)
-            .SumAsync(sp => sp.Amount, ct);
+        // Step 1: Get all tracked SettlementPayment entities for this settlement
+        // (includes Added, Modified, and Unchanged — excludes Deleted/Detached)
+        var trackedEntries = context.ChangeTracker
+            .Entries<SettlementPayment>()
+            .Where(e => e.Entity.SettlementId == settlement.Id
+                        && e.State != EntityState.Deleted
+                        && e.State != EntityState.Detached)
+            .Select(e => e.Entity)
+            .ToList();
+
+        var trackedIds = trackedEntries.Select(e => e.Id).ToHashSet();
+
+        // Step 2: Query database for persisted confirmed payments NOT currently tracked
+        // This handles the case where not all payments were loaded via Include/navigation
+        var persistedUntrackedSum = trackedIds.Count > 0
+            ? await context.SettlementPayments
+                .Where(sp => sp.SettlementId == settlement.Id
+                             && sp.Status == SettlementPaymentStatuses.Confirmed
+                             && !trackedIds.Contains(sp.Id))
+                .SumAsync(sp => sp.Amount, ct)
+            : await context.SettlementPayments
+                .Where(sp => sp.SettlementId == settlement.Id
+                             && sp.Status == SettlementPaymentStatuses.Confirmed)
+                .SumAsync(sp => sp.Amount, ct);
+
+        // Step 3: Sum confirmed amounts from tracked entities (uses their current in-memory state)
+        var trackedConfirmedSum = trackedEntries
+            .Where(sp => sp.Status == SettlementPaymentStatuses.Confirmed)
+            .Sum(sp => sp.Amount);
+
+        // Step 4: Total = persisted-untracked + tracked-confirmed
+        var paidAmount = persistedUntrackedSum + trackedConfirmedSum;
 
         settlement.PaidAmount = paidAmount;
 
