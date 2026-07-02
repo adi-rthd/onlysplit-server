@@ -351,6 +351,11 @@ public sealed class AuthService(
 
     public async Task<AuthResponse> RefreshAsync(RefreshTokenRequest request, string? ipAddress, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(request.RefreshToken))
+        {
+            throw new UnauthorizedAccessException("Refresh token is required.");
+        }
+
         var parts = request.RefreshToken.Split('.');
 
         if (parts.Length != 2)

@@ -404,34 +404,32 @@ public sealed class SettlementService(
         if (payment.Status != SettlementPaymentStatuses.PendingConfirmation)
             throw new AppException("Only pending payments can be confirmed.");
 
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        var strategy = context.Database.CreateExecutionStrategy();
 
-        payment.Status = SettlementPaymentStatuses.Confirmed;
-        payment.ConfirmedAt = DateTimeOffset.UtcNow;
-        payment.ConfirmedBy = currentUser.UserId;
-
-        await RecalculateSettlementInternalAsync(payment.Settlement, cancellationToken);
-
-        // Audit: participates in transaction (before save)
-        await CreateAuditAsync(payment.Id, "PaymentConfirmed",
-            oldStatus: SettlementPaymentStatuses.PendingConfirmation,
-            newStatus: SettlementPaymentStatuses.Confirmed, ct: cancellationToken);
-
-        if (payment.Settlement.Status == SettlementStatuses.Settled)
+        await strategy.ExecuteAsync(async () =>
         {
-            await CreateAuditAsync(payment.Id, "SettlementCompleted",
-                newStatus: SettlementStatuses.Settled, ct: cancellationToken);
-        }
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-        try
-        {
+            payment.Status = SettlementPaymentStatuses.Confirmed;
+            payment.ConfirmedAt = DateTimeOffset.UtcNow;
+            payment.ConfirmedBy = currentUser.UserId;
+
+            await RecalculateSettlementInternalAsync(payment.Settlement, cancellationToken);
+
+            // Audit: participates in transaction (before save)
+            await CreateAuditAsync(payment.Id, "PaymentConfirmed",
+                oldStatus: SettlementPaymentStatuses.PendingConfirmation,
+                newStatus: SettlementPaymentStatuses.Confirmed, ct: cancellationToken);
+
+            if (payment.Settlement.Status == SettlementStatuses.Settled)
+            {
+                await CreateAuditAsync(payment.Id, "SettlementCompleted",
+                    newStatus: SettlementStatuses.Settled, ct: cancellationToken);
+            }
+
             await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            throw new ConflictException("The payment was modified by another request. Please try again.");
-        }
+        });
 
         // Notification: inform payer of confirmation
         await SendNotificationAsync(
@@ -478,28 +476,26 @@ public sealed class SettlementService(
         if (payment.Status != SettlementPaymentStatuses.PendingConfirmation)
             throw new AppException("Only pending payments can be rejected.");
 
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        var strategy = context.Database.CreateExecutionStrategy();
 
-        payment.Status = SettlementPaymentStatuses.Rejected;
-        payment.RejectionReason = request.Reason;
-        payment.UpdatedAt = DateTimeOffset.UtcNow;
-
-        // Audit: participates in transaction
-        await CreateAuditAsync(payment.Id, "PaymentRejected",
-            oldStatus: SettlementPaymentStatuses.PendingConfirmation,
-            newStatus: SettlementPaymentStatuses.Rejected,
-            metadataJson: System.Text.Json.JsonSerializer.Serialize(new { reason = request.Reason }),
-            ct: cancellationToken);
-
-        try
+        await strategy.ExecuteAsync(async () =>
         {
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
+            payment.Status = SettlementPaymentStatuses.Rejected;
+            payment.RejectionReason = request.Reason;
+            payment.UpdatedAt = DateTimeOffset.UtcNow;
+
+            // Audit: participates in transaction
+            await CreateAuditAsync(payment.Id, "PaymentRejected",
+                oldStatus: SettlementPaymentStatuses.PendingConfirmation,
+                newStatus: SettlementPaymentStatuses.Rejected,
+                metadataJson: System.Text.Json.JsonSerializer.Serialize(new { reason = request.Reason }),
+                ct: cancellationToken);
+
             await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            throw new ConflictException("The payment was modified by another request. Please try again.");
-        }
+        });
 
         // Notification: inform payer of rejection
         await SendNotificationAsync(
